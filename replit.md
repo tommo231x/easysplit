@@ -21,6 +21,7 @@ Preferred communication style: Simple, everyday language.
 - **Bill History**: Added collapsible "Past Splits" section on split-bill page showing all previous splits for loaded menus, with GET /api/menus/:code/splits endpoint, React Query auto-fetch with cache invalidation, complete state management (loading/error/empty/data), split cards displaying code/date/participants/totals, currency preservation (each split displays its saved currency even after menu currency changes), and navigation to split detail pages
 - **Itemized Breakdown**: Enhanced results and view-split pages to display individual items each person ordered with quantities and prices (e.g., "2x Pizza £12.00"), separated from totals with visual hierarchy, preventing disputes by showing exactly what each person is being charged for. Copy breakdown function also includes itemized details in text format
 - **My Splits Page**: Created dedicated /my-splits page accessible from home screen where users can view all their saved splits (both manual and menu-based), tracked via localStorage with automatic React Query synchronization. Features include: real-time list updates when saving/deleting splits, newest-first ordering, view and delete actions per split, cross-tab sync via storage events, SSR-safe localStorage access, and clear messaging that deletions are local-only (splits remain accessible via share link)
+- **Adjust Split Feature**: Implemented collaborative split editing via /adjust-split/:code page allowing recipients to modify shared splits. Users can rename participants, add new people, change item quantities, and contribute extra money to reduce others' bills. Features include: iterative redistribution algorithm that evenly distributes extra contributions among remaining recipients (handles uneven balances correctly), frontend validation preventing excess contributions beyond recipient totals, schema changes supporting nullable menuCode and optional menuId for manual splits, and automatic save to new split code preserving the original. Extra contribution logic uses multi-round allocation to ensure no surplus remains undistributed when recipients have different base totals
 
 ## System Architecture
 
@@ -35,6 +36,7 @@ Preferred communication style: Simple, everyday language.
 - `/split-bill` - Bill splitting calculator
 - `/results` - Calculation results display (with save & share functionality)
 - `/split/:code` - View saved split breakdown
+- `/adjust-split/:code` - Edit saved split (rename people, change quantities, add extra contributions)
 - `/my-splits` - View all saved splits tracked in localStorage
 - `404` - Not found page
 
