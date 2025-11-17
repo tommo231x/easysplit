@@ -32,12 +32,32 @@ export default function SplitBill() {
   const [currency, setCurrency] = useState("£");
   const [serviceCharge, setServiceCharge] = useState(12.5);
   const [tipPercent, setTipPercent] = useState(0);
+  const [splitName, setSplitName] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const codeParam = params.get("code");
     if (codeParam) {
       setMenuCode(codeParam.toUpperCase());
+    }
+
+    // Restore form state from sessionStorage if user navigates back
+    const savedState = sessionStorage.getItem("easysplit-form-state");
+    if (savedState) {
+      try {
+        const state = JSON.parse(savedState);
+        if (state.manualItems) setManualItems(state.manualItems);
+        if (state.people) setPeople(state.people);
+        if (state.quantities) setQuantities(state.quantities);
+        if (state.currency) setCurrency(state.currency);
+        if (state.serviceCharge !== undefined) setServiceCharge(state.serviceCharge);
+        if (state.tipPercent !== undefined) setTipPercent(state.tipPercent);
+        if (state.splitName) setSplitName(state.splitName);
+        if (state.menuCode) setMenuCode(state.menuCode);
+        if (state.loadedMenu) setLoadedMenu(state.loadedMenu);
+      } catch (e) {
+        console.error("Failed to restore form state:", e);
+      }
     }
   }, []);
 
@@ -223,6 +243,23 @@ const handleCalculate = () => {
     // Clear any previous split code - this is a fresh calculation
     sessionStorage.removeItem("easysplit-split-code");
     
+    // Save form state for back navigation
+    sessionStorage.setItem(
+      "easysplit-form-state",
+      JSON.stringify({
+        manualItems,
+        people,
+        quantities,
+        currency,
+        serviceCharge,
+        tipPercent,
+        splitName,
+        menuCode: loadedMenu && menuCode ? menuCode : "",
+        loadedMenu,
+      })
+    );
+    
+    // Save results data
     sessionStorage.setItem(
       "easysplit-results",
       JSON.stringify({
@@ -233,6 +270,7 @@ const handleCalculate = () => {
         serviceCharge,
         tipPercent,
         menuCode: loadedMenu && menuCode ? menuCode : undefined,
+        splitName: splitName.trim() || undefined,
       })
     );
     setLocation("/results");
@@ -252,6 +290,23 @@ const handleCalculate = () => {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        <Card className="p-6">
+          <Label htmlFor="split-name" className="text-sm mb-2 block">
+            Split Name <span className="text-muted-foreground">(optional)</span>
+          </Label>
+          <Input
+            id="split-name"
+            placeholder="e.g. 'Team Lunch' or 'Sarah's Birthday Dinner'"
+            value={splitName}
+            onChange={(e) => setSplitName(e.target.value)}
+            className="h-12"
+            data-testid="input-split-name"
+          />
+          <p className="text-xs text-muted-foreground mt-2">
+            Give your split a name so everyone knows what it's for when you share it
+          </p>
+        </Card>
+
         <Tabs defaultValue="code" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="code" data-testid="tab-code">

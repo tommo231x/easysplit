@@ -19,6 +19,7 @@ interface ResultsState {
   serviceCharge: number;
   tipPercent: number;
   menuCode?: string;
+  splitName?: string;
   persistedTotals?: PersonTotal[];
 }
 
@@ -55,7 +56,12 @@ export default function Results() {
   useEffect(() => {
     const sessionData = sessionStorage.getItem("easysplit-results");
     if (sessionData) {
-      setState(JSON.parse(sessionData));
+      const data = JSON.parse(sessionData);
+      setState(data);
+      // Set split name from session data
+      if (data.splitName) {
+        setSplitName(data.splitName);
+      }
       sessionStorage.removeItem("easysplit-results");
     }
     
@@ -306,10 +312,10 @@ export default function Results() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        {splitCode && splitName && (
+        {splitName && (
           <div className="text-center">
             <h2 className="text-2xl font-bold" data-testid="text-split-name">{splitName}</h2>
-            <p className="text-sm text-muted-foreground mt-1">Split #{splitCode}</p>
+            {splitCode && <p className="text-sm text-muted-foreground mt-1">Split #{splitCode}</p>}
           </div>
         )}
         
@@ -398,24 +404,6 @@ export default function Results() {
             </span>
           </div>
         </Card>
-
-        {!splitCode && (
-          <Card className="p-4 space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="split-name">Name this split (optional)</Label>
-              <Input
-                id="split-name"
-                placeholder="e.g. 'Team Lunch' or 'Sarah's Birthday Dinner'"
-                value={splitName}
-                onChange={(e) => setSplitName(e.target.value)}
-                data-testid="input-split-name"
-              />
-              <p className="text-xs text-muted-foreground">
-                Give your split a name so everyone knows what it's for
-              </p>
-            </div>
-          </Card>
-        )}
 
         {splitCode && (
           <Card className="p-4 bg-primary/5 space-y-3">
