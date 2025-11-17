@@ -10,12 +10,13 @@ export default {
         md: ".375rem", /* 6px */
         sm: ".1875rem", /* 3px */
       },
-      colors: {
+colors: {
         // Flat / base colors (regular buttons)
         background: "hsl(var(--background) / <alpha-value>)",
         foreground: "hsl(var(--foreground) / <alpha-value>)",
         border: "hsl(var(--border) / <alpha-value>)",
         input: "hsl(var(--input) / <alpha-value>)",
+        tertiary: "hsl(var(--muted-foreground) / <alpha-value>)",
         card: {
           DEFAULT: "hsl(var(--card) / <alpha-value>)",
           foreground: "hsl(var(--card-foreground) / <alpha-value>)",
@@ -82,10 +83,9 @@ export default {
           offline: "rgb(156 163 175)",
         },
       },
-      fontFamily: {
-        sans: ["var(--font-sans)"],
-        serif: ["var(--font-serif)"],
-        mono: ["var(--font-mono)"],
+fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+        mono: ["Roboto Mono", "monospace"],
       },
       keyframes: {
         "accordion-down": {

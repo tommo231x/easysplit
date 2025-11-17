@@ -1,0 +1,148 @@
+# EasySplit - Bill Splitting Web Application
+
+## Overview
+
+EasySplit is a mobile-friendly web application designed for splitting restaurant bills among groups. The application allows users to create and share menus with unique codes, then calculate individual costs based on what each person ordered. It features a responsive, app-like interface optimized for mobile devices while remaining functional on desktop.
+
+The application supports two primary workflows:
+1. **Menu Creation**: Parse or manually create restaurant menus and generate shareable 6-character codes
+2. **Bill Splitting**: Load menus by code or create ad-hoc items, assign people to orders, and calculate individual totals including service charges and tips
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Frontend Architecture
+
+**Framework**: React 18 with TypeScript, using Vite as the build tool and development server.
+
+**Routing**: Wouter for lightweight client-side routing with the following pages:
+- `/` - Home page with two main action buttons
+- `/create-menu` - Menu creation interface
+- `/split-bill` - Bill splitting calculator
+- `/results` - Calculation results display
+- `404` - Not found page
+
+**UI Component System**: 
+- **shadcn/ui** component library built on Radix UI primitives for accessible, customizable components
+- **Tailwind CSS** for styling with custom design tokens following Material Design principles
+- **Design System**: Material Design-inspired approach with Inter/Roboto fonts, optimized for mobile-first touch interactions
+- Custom color scheme using HSL values with CSS variables for theming support
+- Consistent spacing using Tailwind's spacing scale (2, 4, 6, 8 units)
+
+**State Management**:
+- React hooks for local component state
+- TanStack Query (React Query) for server state management and API caching
+- Session storage for passing calculation data between split-bill and results pages
+- No global state management library (Redux/Zustand) - state is kept local and request-based
+
+**Form Handling**: React Hook Form with Zod for validation (resolver configured but forms use manual validation)
+
+**Key Design Decisions**:
+- Mobile-first responsive design with max-width containers (max-w-2xl) optimized for readability
+- Touch-friendly UI elements (minimum 40px/10 Tailwind units for tap targets)
+- In-memory calculation on frontend - order quantities not persisted to database
+- Session storage used to pass results data without URL parameters
+
+### Backend Architecture
+
+**Runtime**: Node.js with Express.js HTTP server
+
+**API Design**: RESTful JSON API with two endpoints:
+- `POST /api/menus` - Create menu with items, returns generated code
+- `GET /api/menus/:code` - Retrieve menu and items by 6-character code
+
+**Data Validation**: Zod schemas for runtime type checking and validation on both API routes and shared types
+
+**Database Layer**: 
+- **Abstraction Pattern**: Single database helper module (`server/db.ts`) encapsulating all database operations
+- Provides clean interface for swapping database implementations (SQLite → PostgreSQL/D1)
+- Methods: `createMenu()`, `getMenuWithItems()`, `generateUniqueCode()`
+
+**Development Server**:
+- Vite middleware integration for HMR in development
+- Custom request logging middleware for API routes
+- Express serves built static files in production
+
+**Key Architectural Decisions**:
+- Database abstraction enables future migration to cloud databases (Cloudflare D1, Neon PostgreSQL)
+- Minimal API surface - only two endpoints needed since calculations happen client-side
+- Zod schemas shared between frontend and backend via `shared/schema.ts`
+- Menu codes generated using crypto.randomBytes() for uniqueness
+
+### Data Storage
+
+**Current Implementation**: Better-SQLite3 (synchronous SQLite)
+
+**Schema**:
+```
+menus
+  - id (INTEGER PRIMARY KEY)
+  - code (TEXT UNIQUE, 6 characters)
+  - name (TEXT, optional)
+  - created_at (TEXT timestamp)
+
+menu_items
+  - id (INTEGER PRIMARY KEY)
+  - menu_id (INTEGER FOREIGN KEY)
+  - name (TEXT)
+  - price (NUMBER)
+```
+
+**Migration Path**: Configured for Drizzle ORM with PostgreSQL dialect (see `drizzle.config.ts`), enabling future migration to:
+- Neon Serverless PostgreSQL
+- Cloudflare D1
+- Other PostgreSQL-compatible databases
+
+**Data Not Stored**:
+- User accounts/authentication
+- Bill splitting sessions
+- Individual orders or calculations
+- People/person assignments
+
+These are intentionally kept ephemeral in the frontend for privacy and simplicity.
+
+### External Dependencies
+
+**Core Framework Dependencies**:
+- **React 18** - UI framework
+- **Vite** - Build tool and dev server
+- **Express.js** - HTTP server
+- **Wouter** - Lightweight routing (~1.2KB)
+
+**Database & ORM**:
+- **better-sqlite3** - Current SQLite implementation (synchronous)
+- **drizzle-orm** - Type-safe ORM (configured for PostgreSQL migration)
+- **@neondatabase/serverless** - Neon PostgreSQL driver (for future use)
+
+**UI Component Libraries**:
+- **@radix-ui/* (multiple packages)** - Headless accessible UI primitives (accordion, dialog, dropdown, etc.)
+- **tailwindcss** - Utility-first CSS framework
+- **class-variance-authority** - Component variant utilities
+- **lucide-react** - Icon library
+
+**Data & Forms**:
+- **zod** - Schema validation and type inference
+- **react-hook-form** - Form state management
+- **@hookform/resolvers** - Zod integration
+- **@tanstack/react-query** - Server state management
+
+**Utilities**:
+- **nanoid** - Unique ID generation for frontend entities
+- **date-fns** - Date manipulation
+- **clsx & tailwind-merge** - Conditional className utilities
+
+**Development Tools**:
+- **TypeScript** - Type safety
+- **@replit/vite-plugin-*** - Replit-specific development plugins (runtime errors, cartographer, dev banner)
+
+**Session Management**:
+- **connect-pg-simple** - PostgreSQL session store (configured but sessions not currently used)
+
+**Key Dependency Decisions**:
+- Chose better-sqlite3 over Drizzle's built-in driver for synchronous operations
+- Used Wouter instead of React Router for minimal bundle size
+- Selected shadcn/ui + Radix for accessible, customizable components without opinionated styling
+- TanStack Query provides caching and request deduplication without additional complexity
