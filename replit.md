@@ -22,6 +22,7 @@ Preferred communication style: Simple, everyday language.
 - **Itemized Breakdown**: Enhanced results and view-split pages to display individual items each person ordered with quantities and prices (e.g., "2x Pizza £12.00"), separated from totals with visual hierarchy, preventing disputes by showing exactly what each person is being charged for. Copy breakdown function also includes itemized details in text format
 - **My Splits Page**: Created dedicated /my-splits page accessible from home screen where users can view all their saved splits (both manual and menu-based), tracked via localStorage with automatic React Query synchronization. Features include: real-time list updates when saving/deleting splits, newest-first ordering, view and delete actions per split, cross-tab sync via storage events, SSR-safe localStorage access, and clear messaging that deletions are local-only (splits remain accessible via share link)
 - **Adjust Split Feature**: Implemented collaborative split editing via /adjust-split/:code page allowing recipients to modify shared splits. Users can rename participants, add new people, change item quantities, and contribute extra money to reduce others' bills. Features include: iterative redistribution algorithm that evenly distributes extra contributions among remaining recipients (handles uneven balances correctly), frontend validation preventing excess contributions beyond recipient totals, schema changes supporting nullable menuCode and optional menuId for manual splits, and automatic save to new split code preserving the original. Extra contribution logic uses multi-round allocation to ensure no surplus remains undistributed when recipients have different base totals
+- **Sharing Improvements (November 2025)**: Added optional split naming feature allowing users to give their splits descriptive names (e.g., "Team Lunch", "Sarah's Birthday Dinner"). Names display prominently on results, view-split, and My Splits pages, and are preserved when creating adjusted versions. Implemented dedicated "Copy Link" button (separate from "Share Link") on both results and view-split pages for easier link sharing with visual feedback. Made "Adjust Split" button available on both results page (for split creators) and view-split page (for recipients), enabling everyone to modify and improve shared splits. All three improvements work together to make bill sharing more intuitive and user-friendly
 
 ## System Architecture
 
@@ -114,6 +115,7 @@ menu_items
 bill_splits
   - id (INTEGER PRIMARY KEY)
   - code (TEXT UNIQUE, 6 characters)
+  - name (TEXT, nullable, optional descriptive name)
   - menu_code (TEXT, nullable, links to menu)
   - people (TEXT, JSON array)
   - items (TEXT, JSON array)
