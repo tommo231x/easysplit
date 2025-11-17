@@ -50,6 +50,7 @@ export default function MySplits() {
 
   const { data: splits } = useQuery<Array<{
     code: string;
+    name?: string | null;
     menuCode: string | null;
     people: Array<{ id: string; name: string }>;
     totals: Array<{
@@ -130,6 +131,11 @@ export default function MySplits() {
               <Card key={split.code} className="p-6" data-testid={`card-split-${split.code}`}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
+                    {split.name && (
+                      <h3 className="font-semibold text-lg mb-2" data-testid={`text-split-name-${split.code}`}>
+                        {split.name}
+                      </h3>
+                    )}
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <code className="text-sm font-mono bg-muted px-2 py-1 rounded font-semibold">
                         {split.code}

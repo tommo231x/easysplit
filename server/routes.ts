@@ -157,6 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         code: split.code,
+        name: split.name,
         menuCode: split.menuCode,
         people: JSON.parse(split.people),
         items: JSON.parse(split.items),
@@ -186,6 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(splits.map(split => ({
         code: split.code,
+        name: split.name,
         menuCode: split.menuCode,
         people: JSON.parse(split.people),
         totals: JSON.parse(split.totals),

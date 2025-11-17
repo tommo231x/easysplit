@@ -36,6 +36,7 @@ export default function Results() {
   // If there's a saved split code but no state, fetch the split from API
   const { data: savedSplit } = useQuery<{
     code: string;
+    name?: string | null;
     menuCode: string | null;
     people: Person[];
     items: MenuItem[];
@@ -78,6 +79,7 @@ export default function Results() {
         menuCode: savedSplit.menuCode || undefined,
         persistedTotals: savedSplit.totals,
       });
+      setSplitName(savedSplit.name || "");
     }
   }, [savedSplit, state]);
 
@@ -304,6 +306,13 @@ export default function Results() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        {splitCode && splitName && (
+          <div className="text-center">
+            <h2 className="text-2xl font-bold" data-testid="text-split-name">{splitName}</h2>
+            <p className="text-sm text-muted-foreground mt-1">Split #{splitCode}</p>
+          </div>
+        )}
+        
         <div className="space-y-4">
           {totals.map((personTotal) => {
             const personItems = quantities
