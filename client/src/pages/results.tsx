@@ -203,6 +203,24 @@ export default function Results() {
 
     totals.forEach((t) => {
       text += `${t.person.name}\n`;
+      
+      // Add itemized list
+      const personItems = quantities
+        .filter((q) => q.personId === t.person.id)
+        .map((q) => {
+          const item = items.find((i) => i.id === q.itemId);
+          return { ...q, item: item! };
+        })
+        .filter((q) => q.item);
+      
+      personItems.forEach((pItem) => {
+        text += `  ${pItem.quantity}x ${pItem.item.name} - ${currency}${(pItem.item.price * pItem.quantity).toFixed(2)}\n`;
+      });
+      
+      if (personItems.length > 0) {
+        text += `  ---\n`;
+      }
+      
       text += `  Subtotal: ${currency}${t.subtotal.toFixed(2)}\n`;
       if (t.service > 0) {
         text += `  Service (${serviceCharge}%): ${currency}${t.service.toFixed(2)}\n`;
@@ -246,17 +264,47 @@ export default function Results() {
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         <div className="space-y-4">
-          {totals.map((personTotal) => (
-            <Card key={personTotal.person.id} className="p-6" data-testid={`card-person-${personTotal.person.id}`}>
-              <h3 className="text-xl font-semibold mb-4">{personTotal.person.name}</h3>
-              <div className="space-y-2 font-mono text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span data-testid={`text-subtotal-${personTotal.person.id}`}>
-                    {currency}
-                    {personTotal.subtotal.toFixed(2)}
-                  </span>
-                </div>
+          {totals.map((personTotal) => {
+            const personItems = quantities
+              .filter((q) => q.personId === personTotal.person.id)
+              .map((q) => {
+                const item = items.find((i) => i.id === q.itemId);
+                return {
+                  ...q,
+                  item: item!,
+                };
+              })
+              .filter((q) => q.item);
+
+            return (
+              <Card key={personTotal.person.id} className="p-6" data-testid={`card-person-${personTotal.person.id}`}>
+                <h3 className="text-xl font-semibold mb-4">{personTotal.person.name}</h3>
+                
+                {personItems.length > 0 && (
+                  <div className="mb-4 space-y-1">
+                    {personItems.map((pItem, idx) => (
+                      <div key={idx} className="flex justify-between gap-2 text-sm" data-testid={`item-${personTotal.person.id}-${idx}`}>
+                        <span className="text-muted-foreground">
+                          {pItem.quantity}x {pItem.item.name}
+                        </span>
+                        <span className="font-mono">
+                          {currency}{(pItem.item.price * pItem.quantity).toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <Separator className="my-3" />
+                
+                <div className="space-y-2 font-mono text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span data-testid={`text-subtotal-${personTotal.person.id}`}>
+                      {currency}
+                      {personTotal.subtotal.toFixed(2)}
+                    </span>
+                  </div>
                 {personTotal.service > 0 && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">
@@ -287,7 +335,8 @@ export default function Results() {
                 </div>
               </div>
             </Card>
-          ))}
+            );
+          })}
         </div>
 
         <Card className="p-6 bg-primary text-primary-foreground">

@@ -2,6 +2,7 @@ import { useRoute, Link } from "wouter";
 import { ArrowLeft, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -38,15 +39,44 @@ export default function ViewSplit() {
   const copyBreakdown = async () => {
     if (!data) return;
 
-    const breakdown = data.totals
-      .map(
-        (t) =>
-          `${t.person.name}: ${data.currency}${t.total.toFixed(2)} (Subtotal: ${data.currency}${t.subtotal.toFixed(2)} + Service: ${data.currency}${t.service.toFixed(2)} + Tip: ${data.currency}${t.tip.toFixed(2)})`
-      )
-      .join("\n");
+    let text = "Bill Split Breakdown\n";
+    text += "=".repeat(30) + "\n\n";
+
+    data.totals.forEach((t) => {
+      text += `${t.person.name}\n`;
+      
+      // Add itemized list
+      const personItems = data.quantities
+        .filter((q) => q.personId === t.person.id)
+        .map((q) => {
+          const item = data.items.find((i) => i.id === q.itemId);
+          return { ...q, item: item! };
+        })
+        .filter((q) => q.item);
+      
+      personItems.forEach((pItem) => {
+        text += `  ${pItem.quantity}x ${pItem.item.name} - ${data.currency}${(pItem.item.price * pItem.quantity).toFixed(2)}\n`;
+      });
+      
+      if (personItems.length > 0) {
+        text += `  ---\n`;
+      }
+      
+      text += `  Subtotal: ${data.currency}${t.subtotal.toFixed(2)}\n`;
+      if (t.service > 0) {
+        text += `  Service (${data.serviceCharge}%): ${data.currency}${t.service.toFixed(2)}\n`;
+      }
+      if (t.tip > 0) {
+        text += `  Tip (${data.tipPercent}%): ${data.currency}${t.tip.toFixed(2)}\n`;
+      }
+      text += `  Total: ${data.currency}${t.total.toFixed(2)}\n\n`;
+    });
 
     const grandTotal = data.totals.reduce((sum, t) => sum + t.total, 0);
-    const fullText = `Bill Split\n\n${breakdown}\n\nGrand Total: ${data.currency}${grandTotal.toFixed(2)}`;
+    text += "=".repeat(30) + "\n";
+    text += `Grand Total: ${data.currency}${grandTotal.toFixed(2)}\n`;
+    
+    const fullText = text;
 
     try {
       await navigator.clipboard.writeText(fullText);
@@ -153,39 +183,70 @@ export default function ViewSplit() {
           </div>
         </Card>
 
-        {data.totals.map((personTotal) => (
-          <Card key={personTotal.person.id} className="p-6" data-testid={`card-person-${personTotal.person.id}`}>
-            <h3 className="text-lg font-semibold mb-4">{personTotal.person.name}</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span data-testid={`text-subtotal-${personTotal.person.id}`}>
-                  {data.currency}{personTotal.subtotal.toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Service ({data.serviceCharge}%)</span>
-                <span data-testid={`text-service-${personTotal.person.id}`}>
-                  {data.currency}{personTotal.service.toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Tip ({data.tipPercent}%)</span>
-                <span data-testid={`text-tip-${personTotal.person.id}`}>
-                  {data.currency}{personTotal.tip.toFixed(2)}
-                </span>
-              </div>
-              <div className="border-t pt-2 mt-2">
-                <div className="flex justify-between font-semibold">
-                  <span>Total</span>
-                  <span className="text-lg" data-testid={`text-total-${personTotal.person.id}`}>
-                    {data.currency}{personTotal.total.toFixed(2)}
+        {data.totals.map((personTotal) => {
+          const personItems = data.quantities
+            .filter((q) => q.personId === personTotal.person.id)
+            .map((q) => {
+              const item = data.items.find((i) => i.id === q.itemId);
+              return {
+                ...q,
+                item: item!,
+              };
+            })
+            .filter((q) => q.item);
+
+          return (
+            <Card key={personTotal.person.id} className="p-6" data-testid={`card-person-${personTotal.person.id}`}>
+              <h3 className="text-lg font-semibold mb-4">{personTotal.person.name}</h3>
+              
+              {personItems.length > 0 && (
+                <div className="mb-4 space-y-1">
+                  {personItems.map((pItem, idx) => (
+                    <div key={idx} className="flex justify-between gap-2 text-sm" data-testid={`item-${personTotal.person.id}-${idx}`}>
+                      <span className="text-muted-foreground">
+                        {pItem.quantity}x {pItem.item.name}
+                      </span>
+                      <span className="font-mono">
+                        {data.currency}{(pItem.item.price * pItem.quantity).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <Separator className="my-3" />
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span data-testid={`text-subtotal-${personTotal.person.id}`}>
+                    {data.currency}{personTotal.subtotal.toFixed(2)}
                   </span>
                 </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Service ({data.serviceCharge}%)</span>
+                  <span data-testid={`text-service-${personTotal.person.id}`}>
+                    {data.currency}{personTotal.service.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Tip ({data.tipPercent}%)</span>
+                  <span data-testid={`text-tip-${personTotal.person.id}`}>
+                    {data.currency}{personTotal.tip.toFixed(2)}
+                  </span>
+                </div>
+                <div className="border-t pt-2 mt-2">
+                  <div className="flex justify-between font-semibold">
+                    <span>Total</span>
+                    <span className="text-lg" data-testid={`text-total-${personTotal.person.id}`}>
+                      {data.currency}{personTotal.total.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
 
         <Card className="p-6 bg-primary/5">
           <div className="flex justify-between items-center">

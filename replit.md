@@ -19,6 +19,7 @@ Preferred communication style: Simple, everyday language.
 - **Multi-Currency Support**: Extended database schema with currency field (with automatic migration for existing databases), added CurrencySelector component with 8 common currencies (£, $, €, ¥, ₹, C$, A$, CHF), currency persists with menus and loads correctly in split-bill flow
 - **Shareable Bill Split Links**: Implemented bill_splits table with POST/GET /api/splits endpoints, results page "Save & Share" functionality, /split/:code view page, comprehensive Zod validation, code normalization, and persistent totals to prevent recalculation drift
 - **Bill History**: Added collapsible "Past Splits" section on split-bill page showing all previous splits for loaded menus, with GET /api/menus/:code/splits endpoint, React Query auto-fetch with cache invalidation, complete state management (loading/error/empty/data), split cards displaying code/date/participants/totals, currency preservation (each split displays its saved currency even after menu currency changes), and navigation to split detail pages
+- **Itemized Breakdown**: Enhanced results and view-split pages to display individual items each person ordered with quantities and prices (e.g., "2x Pizza £12.00"), separated from totals with visual hierarchy, preventing disputes by showing exactly what each person is being charged for. Copy breakdown function also includes itemized details in text format
 
 ## System Architecture
 
