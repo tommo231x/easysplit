@@ -20,6 +20,7 @@ Preferred communication style: Simple, everyday language.
 - **Shareable Bill Split Links**: Implemented bill_splits table with POST/GET /api/splits endpoints, results page "Save & Share" functionality, /split/:code view page, comprehensive Zod validation, code normalization, and persistent totals to prevent recalculation drift
 - **Bill History**: Added collapsible "Past Splits" section on split-bill page showing all previous splits for loaded menus, with GET /api/menus/:code/splits endpoint, React Query auto-fetch with cache invalidation, complete state management (loading/error/empty/data), split cards displaying code/date/participants/totals, currency preservation (each split displays its saved currency even after menu currency changes), and navigation to split detail pages
 - **Itemized Breakdown**: Enhanced results and view-split pages to display individual items each person ordered with quantities and prices (e.g., "2x Pizza £12.00"), separated from totals with visual hierarchy, preventing disputes by showing exactly what each person is being charged for. Copy breakdown function also includes itemized details in text format
+- **My Splits Page**: Created dedicated /my-splits page accessible from home screen where users can view all their saved splits (both manual and menu-based), tracked via localStorage with automatic React Query synchronization. Features include: real-time list updates when saving/deleting splits, newest-first ordering, view and delete actions per split, cross-tab sync via storage events, SSR-safe localStorage access, and clear messaging that deletions are local-only (splits remain accessible via share link)
 
 ## System Architecture
 
@@ -28,12 +29,13 @@ Preferred communication style: Simple, everyday language.
 **Framework**: React 18 with TypeScript, using Vite as the build tool and development server.
 
 **Routing**: Wouter for lightweight client-side routing with the following pages:
-- `/` - Home page with two main action buttons
+- `/` - Home page with three main action buttons (Create Menu, Split Bill, My Splits)
 - `/create-menu` - Menu creation interface
 - `/edit-menu/:code` - Menu editing interface
 - `/split-bill` - Bill splitting calculator
 - `/results` - Calculation results display (with save & share functionality)
 - `/split/:code` - View saved split breakdown
+- `/my-splits` - View all saved splits tracked in localStorage
 - `404` - Not found page
 
 **UI Component System**: 

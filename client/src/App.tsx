@@ -9,6 +9,7 @@ import SplitBill from "@/pages/split-bill";
 import Results from "@/pages/results";
 import EditMenu from "@/pages/edit-menu";
 import ViewSplit from "@/pages/view-split";
+import MySplits from "@/pages/my-splits";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/results" component={Results} />
       <Route path="/edit-menu/:code" component={EditMenu} />
       <Route path="/split/:code" component={ViewSplit} />
+      <Route path="/my-splits" component={MySplits} />
       <Route component={NotFound} />
     </Switch>
   );

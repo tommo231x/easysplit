@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { FileText, Calculator } from "lucide-react";
+import { FileText, Calculator, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -45,6 +45,22 @@ export default function Home() {
                 <div className="font-medium">Split a Bill</div>
                 <div className="text-sm opacity-90">
                   Calculate who owes what
+                </div>
+              </div>
+            </Button>
+          </Link>
+
+          <Link href="/my-splits">
+            <Button
+              variant="outline"
+              className="w-full min-h-20 rounded-xl p-6 flex items-center justify-start gap-4 text-base"
+              data-testid="button-my-splits"
+            >
+              <History className="h-6 w-6 flex-shrink-0" />
+              <div className="text-left">
+                <div className="font-medium">My Splits</div>
+                <div className="text-sm opacity-90">
+                  View your saved bill splits
                 </div>
               </div>
             </Button>

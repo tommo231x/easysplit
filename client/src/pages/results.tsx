@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { MenuItem, Person, ItemQuantity, PersonTotal } from "@shared/schema";
 
 interface ResultsState {
@@ -94,6 +94,19 @@ export default function Results() {
     onSuccess: (data) => {
       setSplitCode(data.code);
       sessionStorage.setItem("easysplit-split-code", data.code);
+      
+      // Track this split in localStorage
+      const savedSplits = JSON.parse(localStorage.getItem("easysplit-my-splits") || "[]");
+      if (!savedSplits.includes(data.code)) {
+        savedSplits.unshift(data.code);
+        localStorage.setItem("easysplit-my-splits", JSON.stringify(savedSplits));
+        
+        // Invalidate My Splits query so it updates if the page is open
+        queryClient.invalidateQueries({
+          queryKey: ['/api/splits/batch']
+        });
+      }
+      
       toast({
         title: "Split saved!",
         description: "Your bill split has been saved and can be shared",
