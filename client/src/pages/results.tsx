@@ -1,9 +1,11 @@
-import { Link } from "wouter";
-import { ArrowLeft, Copy, Check, Share2 } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { ArrowLeft, Copy, Check, Share2, Edit, Link as LinkIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -22,10 +24,12 @@ interface ResultsState {
 
 export default function Results() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [copied, setCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [state, setState] = useState<ResultsState | null>(null);
   const [splitCode, setSplitCode] = useState<string | null>(null);
+  const [splitName, setSplitName] = useState<string>("");
 
   const savedSplitCode = sessionStorage.getItem("easysplit-split-code");
   
@@ -79,6 +83,7 @@ export default function Results() {
 
   const saveSplitMutation = useMutation({
     mutationFn: async (data: {
+      name?: string;
       menuCode?: string;
       people: Person[];
       items: MenuItem[];
@@ -173,6 +178,7 @@ export default function Results() {
 
   const handleSaveSplit = () => {
     saveSplitMutation.mutate({
+      name: splitName.trim() || undefined,
       menuCode,
       people,
       items,
@@ -182,6 +188,28 @@ export default function Results() {
       tipPercent,
       totals,
     });
+  };
+
+  const copyLink = async () => {
+    if (!splitCode) return;
+    
+    const url = `${window.location.origin}/split/${splitCode}`;
+    
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+      toast({
+        title: "Link copied!",
+        description: "Share link copied to clipboard",
+      });
+    } catch (err) {
+      toast({
+        title: "Copy failed",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
   };
 
   const shareLink = async () => {
@@ -362,13 +390,62 @@ export default function Results() {
           </div>
         </Card>
 
+        {!splitCode && (
+          <Card className="p-4 space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="split-name">Name this split (optional)</Label>
+              <Input
+                id="split-name"
+                placeholder="e.g. 'Team Lunch' or 'Sarah's Birthday Dinner'"
+                value={splitName}
+                onChange={(e) => setSplitName(e.target.value)}
+                data-testid="input-split-name"
+              />
+              <p className="text-xs text-muted-foreground">
+                Give your split a name so everyone knows what it's for
+              </p>
+            </div>
+          </Card>
+        )}
+
         {splitCode && (
-          <Card className="p-4 bg-primary/5">
+          <Card className="p-4 bg-primary/5 space-y-3">
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Shareable link:</span>
               <code className="flex-1 font-mono text-xs bg-background px-2 py-1 rounded border" data-testid="text-split-link">
                 {window.location.origin}/split/{splitCode}
               </code>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={copyLink}
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                data-testid="button-copy-link"
+              >
+                {linkCopied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <LinkIcon className="h-4 w-4 mr-2" />
+                    Copy Link
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={shareLink}
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                data-testid="button-share-link"
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Share
+              </Button>
             </div>
           </Card>
         )}
@@ -405,21 +482,13 @@ export default function Results() {
             </Button>
           ) : (
             <Button
-              onClick={shareLink}
+              onClick={() => navigate(`/adjust-split/${splitCode}`)}
+              variant="outline"
               className="flex-1"
-              data-testid="button-share-link"
+              data-testid="button-adjust-split"
             >
-              {linkCopied ? (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Link Copied!
-                </>
-              ) : (
-                <>
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share Link
-                </>
-              )}
+              <Edit className="h-4 w-4 mr-2" />
+              Adjust Split
             </Button>
           )}
         </div>

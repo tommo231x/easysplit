@@ -61,6 +61,7 @@ export const personTotalSchema = z.object({
 export const billSplitSchema = z.object({
   id: z.number(),
   code: z.string().length(6),
+  name: z.string().nullable().optional(),
   menuCode: z.string().nullable(),
   people: z.string(), // JSON array
   items: z.string(), // JSON array
@@ -82,6 +83,7 @@ export const billSplitItemSchema = z.object({
 
 // Insert schema for bill splits
 export const insertBillSplitSchema = z.object({
+  name: z.string().optional(),
   menuCode: z.string().nullable().optional(),
   people: z.array(personSchema).min(1),
   items: z.array(billSplitItemSchema).min(1),

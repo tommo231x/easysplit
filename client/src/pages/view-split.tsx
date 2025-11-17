@@ -1,5 +1,5 @@
 import { useRoute, Link } from "wouter";
-import { ArrowLeft, Copy, Check, Edit } from "lucide-react";
+import { ArrowLeft, Copy, Check, Edit, Link as LinkIcon, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -12,9 +12,11 @@ export default function ViewSplit() {
   const code = params?.code?.toUpperCase() || "";
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const { data, isLoading } = useQuery<{
     code: string;
+    name?: string | null;
     menuCode: string | null;
     people: Array<{ id: string; name: string }>;
     items: Array<{ id: number; name: string; price: number }>;
@@ -93,24 +95,39 @@ export default function ViewSplit() {
     }
   };
 
+  const copyLink = async () => {
+    const url = window.location.href;
+    
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+      toast({
+        title: "Link copied!",
+        description: "Share link copied to clipboard",
+      });
+    } catch (err) {
+      toast({
+        title: "Copy failed",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
+
   const shareLink = async () => {
     const url = window.location.href;
+    const title = data?.name || "Bill Split";
     
     try {
       if (navigator.share) {
         await navigator.share({
-          title: "Bill Split",
-          text: "Check out our bill split",
+          title,
+          text: `Check out "${title}"`,
           url,
         });
       } else {
-        await navigator.clipboard.writeText(url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-        toast({
-          title: "Link copied!",
-          description: "Share link copied to clipboard",
-        });
+        await copyLink();
       }
     } catch (err) {
       // User cancelled share
@@ -161,6 +178,13 @@ export default function ViewSplit() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        {data.name && (
+          <div className="text-center">
+            <h2 className="text-2xl font-bold" data-testid="text-split-name">{data.name}</h2>
+            <p className="text-sm text-muted-foreground mt-1">Split #{data.code}</p>
+          </div>
+        )}
+        
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">Split Details</h2>
           <div className="space-y-2 text-sm">
@@ -257,22 +281,57 @@ export default function ViewSplit() {
           </div>
         </Card>
 
-        <Link href={`/adjust-split/${code}`}>
-          <Button variant="default" className="w-full mb-2" data-testid="button-adjust-split">
-            <Edit className="h-4 w-4 mr-2" />
-            Adjust Split
-          </Button>
-        </Link>
+        <Card className="p-4 bg-primary/5 space-y-3">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Shareable link:</span>
+            <code className="flex-1 font-mono text-xs bg-background px-2 py-1 rounded border">
+              {window.location.origin}/split/{code}
+            </code>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={copyLink}
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              data-testid="button-copy-link"
+            >
+              {linkCopied ? (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <LinkIcon className="h-4 w-4 mr-2" />
+                  Copy Link
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={shareLink}
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              data-testid="button-share"
+            >
+              <Share2 className="h-4 w-4 mr-2" />
+              Share
+            </Button>
+          </div>
+        </Card>
 
         <div className="flex gap-2">
           <Button onClick={copyBreakdown} variant="outline" className="flex-1" data-testid="button-copy-breakdown">
             <Copy className="h-4 w-4 mr-2" />
             Copy Breakdown
           </Button>
-          <Button onClick={shareLink} className="flex-1" data-testid="button-share-link">
-            {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-            Share Link
-          </Button>
+          <Link href={`/adjust-split/${code}`} className="flex-1">
+            <Button variant="default" className="w-full" data-testid="button-adjust-split">
+              <Edit className="h-4 w-4 mr-2" />
+              Adjust Split
+            </Button>
+          </Link>
         </div>
       </main>
     </div>

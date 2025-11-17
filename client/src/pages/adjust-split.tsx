@@ -29,9 +29,11 @@ export default function AdjustSplit() {
   const [tipPercent, setTipPercent] = useState(0);
   const [currency, setCurrency] = useState("£");
   const [menuCode, setMenuCode] = useState<string | null>(null);
+  const [splitName, setSplitName] = useState<string | null>(null);
 
   const { data: originalSplit, isLoading } = useQuery<{
     code: string;
+    name?: string | null;
     menuCode: string | null;
     people: Person[];
     items: MenuItem[];
@@ -59,6 +61,7 @@ export default function AdjustSplit() {
       setTipPercent(originalSplit.tipPercent);
       setCurrency(originalSplit.currency);
       setMenuCode(originalSplit.menuCode);
+      setSplitName(originalSplit.name || null);
     }
   }, [originalSplit]);
 
@@ -187,6 +190,7 @@ export default function AdjustSplit() {
       const totals = calculateTotals();
       
       const response = await apiRequest("POST", "/api/splits", {
+        name: splitName || undefined,
         menuCode,
         people: people.map((p) => ({ id: p.id, name: p.name })),
         items,

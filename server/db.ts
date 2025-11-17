@@ -33,6 +33,7 @@ class DatabaseHelper {
       CREATE TABLE IF NOT EXISTS bill_splits (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         code TEXT UNIQUE NOT NULL,
+        name TEXT,
         menu_code TEXT,
         people TEXT NOT NULL,
         items TEXT NOT NULL,
@@ -52,8 +53,8 @@ class DatabaseHelper {
 
     // Migration: Add currency column if it doesn't exist
     try {
-      const tableInfo = this.db.pragma("table_info(menus)");
-      const hasCurrency = tableInfo.some((col: any) => col.name === "currency");
+      const tableInfo = this.db.pragma("table_info(menus)") as Array<{ name: string }>;
+      const hasCurrency = tableInfo.some((col) => col.name === "currency");
       
       if (!hasCurrency) {
         this.db.exec("ALTER TABLE menus ADD COLUMN currency TEXT NOT NULL DEFAULT '£'");
@@ -61,6 +62,19 @@ class DatabaseHelper {
       }
     } catch (error) {
       console.error("Migration error:", error);
+    }
+
+    // Migration: Add name column to bill_splits if it doesn't exist
+    try {
+      const splitsTableInfo = this.db.pragma("table_info(bill_splits)") as Array<{ name: string }>;
+      const hasName = splitsTableInfo.some((col) => col.name === "name");
+      
+      if (!hasName) {
+        this.db.exec("ALTER TABLE bill_splits ADD COLUMN name TEXT");
+        console.log("Migration: Added name column to bill_splits table");
+      }
+    } catch (error) {
+      console.error("Migration error for bill_splits:", error);
     }
   }
 
@@ -229,12 +243,13 @@ class DatabaseHelper {
     }
     
     const insertSplit = this.db.prepare(`
-      INSERT INTO bill_splits (code, menu_code, people, items, quantities, currency, service_charge, tip_percent, totals)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO bill_splits (code, name, menu_code, people, items, quantities, currency, service_charge, tip_percent, totals)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     insertSplit.run(
       code,
+      data.name || null,
       data.menuCode || null,
       JSON.stringify(data.people),
       JSON.stringify(data.items),
@@ -265,6 +280,7 @@ class DatabaseHelper {
     return {
       id: split.id,
       code: split.code,
+      name: split.name,
       menuCode: split.menu_code,
       people: split.people,
       items: split.items,
@@ -285,6 +301,7 @@ class DatabaseHelper {
     return splits.map((split) => ({
       id: split.id,
       code: split.code,
+      name: split.name,
       menuCode: split.menu_code,
       people: split.people,
       items: split.items,
