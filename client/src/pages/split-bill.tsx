@@ -348,10 +348,14 @@ const handleCalculate = () => {
         </Tabs>
 
         {loadedMenu && (
-          <Collapsible>
+          <Collapsible defaultOpen>
             <Card className="p-6">
-              <CollapsibleTrigger className="w-full" data-testid="button-toggle-history">
-                <div className="flex items-center justify-between">
+              <CollapsibleTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-between h-auto p-0" 
+                  data-testid="button-toggle-history"
+                >
                   <div className="flex items-center gap-2">
                     <History className="h-5 w-5" />
                     <h3 className="font-medium">
@@ -359,7 +363,7 @@ const handleCalculate = () => {
                     </h3>
                   </div>
                   <ChevronRight className="h-5 w-5 transition-transform ui-state-open:rotate-90" />
-                </div>
+                </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-4">
                 {isFetchingHistory && (
@@ -553,8 +557,9 @@ const handleCalculate = () => {
                 <Input
                   id="tip"
                   type="number"
-                  value={tipPercent}
+                  value={tipPercent || ""}
                   onChange={(e) => setTipPercent(parseFloat(e.target.value) || 0)}
+                  placeholder="0"
                   className="h-12"
                   step="0.5"
                   min="0"
