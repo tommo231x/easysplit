@@ -189,6 +189,7 @@ const handleCalculate = () => {
         currency,
         serviceCharge,
         tipPercent,
+        menuCode: loadedMenu && menuCode ? menuCode : undefined,
       })
     );
     setLocation("/results");

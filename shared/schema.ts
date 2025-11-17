@@ -37,22 +37,56 @@ export type MenuItem = z.infer<typeof menuItemSchema>;
 export type InsertMenu = z.infer<typeof insertMenuSchema>;
 export type InsertMenuItem = z.infer<typeof insertMenuItemSchema>;
 
-// Frontend-only types for bill splitting (not stored in DB)
-export type Person = {
-  id: string;
-  name: string;
-};
+// Reusable schemas for bill splitting
+export const personSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+});
 
-export type ItemQuantity = {
-  itemId: number;
-  personId: string;
-  quantity: number;
-};
+export const itemQuantitySchema = z.object({
+  itemId: z.number().int(),
+  personId: z.string().min(1),
+  quantity: z.number().positive().int(),
+});
 
-export type PersonTotal = {
-  person: Person;
-  subtotal: number;
-  service: number;
-  tip: number;
-  total: number;
-};
+export const personTotalSchema = z.object({
+  person: personSchema,
+  subtotal: z.number().nonnegative().finite(),
+  service: z.number().nonnegative().finite(),
+  tip: z.number().nonnegative().finite(),
+  total: z.number().nonnegative().finite(),
+});
+
+// Bill split database schema
+export const billSplitSchema = z.object({
+  id: z.number(),
+  code: z.string().length(6),
+  menuCode: z.string().nullable(),
+  people: z.string(), // JSON array
+  items: z.string(), // JSON array
+  quantities: z.string(), // JSON array
+  currency: z.string(),
+  serviceCharge: z.number(),
+  tipPercent: z.number(),
+  totals: z.string(), // JSON array
+  createdAt: z.string(),
+});
+
+// Insert schema for bill splits
+export const insertBillSplitSchema = z.object({
+  menuCode: z.string().optional(),
+  people: z.array(personSchema).min(1),
+  items: z.array(menuItemSchema).min(1),
+  quantities: z.array(itemQuantitySchema).min(1),
+  currency: z.string().min(1),
+  serviceCharge: z.number().min(0).max(100).finite(),
+  tipPercent: z.number().min(0).max(100).finite(),
+  totals: z.array(personTotalSchema).min(1),
+});
+
+// Types
+export type Person = z.infer<typeof personSchema>;
+export type ItemQuantity = z.infer<typeof itemQuantitySchema>;
+export type PersonTotal = z.infer<typeof personTotalSchema>;
+export type BillSplit = z.infer<typeof billSplitSchema>;
+export type InsertBillSplit = z.infer<typeof insertBillSplitSchema>;

@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "./db";
 import { z } from "zod";
+import { insertBillSplitSchema } from "@shared/schema";
+import type { InsertBillSplit } from "@shared/schema";
 
 const insertMenuItemSchema = z.object({
   name: z.string().min(1, "Item name is required"),
@@ -107,6 +109,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting menu:", error);
       res.status(500).json({ error: "Failed to delete menu" });
+    }
+  });
+
+  app.post("/api/splits", async (req, res) => {
+    try {
+      const validationResult = insertBillSplitSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        res.status(400).json({ 
+          error: "Invalid split data",
+          details: validationResult.error.errors,
+        });
+        return;
+      }
+      
+      const data = validationResult.data as InsertBillSplit;
+      const result = db.createBillSplit(data);
+      
+      res.json({
+        code: result.code,
+        split: result.split,
+      });
+    } catch (error) {
+      console.error("Error creating split:", error);
+      res.status(500).json({ error: "Failed to create split" });
+    }
+  });
+
+  app.get("/api/splits/:code", async (req, res) => {
+    try {
+      const code = req.params.code.toUpperCase();
+      
+      if (code.length !== 6) {
+        res.status(400).json({ error: "Split code must be 6 characters" });
+        return;
+      }
+
+      const split = db.getSplitByCode(code);
+      
+      if (!split) {
+        res.status(404).json({ error: "Split not found" });
+        return;
+      }
+
+      res.json({
+        code: split.code,
+        menuCode: split.menuCode,
+        people: JSON.parse(split.people),
+        items: JSON.parse(split.items),
+        quantities: JSON.parse(split.quantities),
+        currency: split.currency,
+        serviceCharge: split.serviceCharge,
+        tipPercent: split.tipPercent,
+        totals: JSON.parse(split.totals),
+        createdAt: split.createdAt,
+      });
+    } catch (error) {
+      console.error("Error fetching split:", error);
+      res.status(500).json({ error: "Failed to fetch split" });
+    }
+  });
+
+  app.get("/api/menus/:code/splits", async (req, res) => {
+    try {
+      const code = req.params.code.toUpperCase();
+      
+      if (code.length !== 6) {
+        res.status(400).json({ error: "Menu code must be 6 characters" });
+        return;
+      }
+
+      const splits = db.getSplitsByMenuCode(code);
+      
+      res.json(splits.map(split => ({
+        code: split.code,
+        menuCode: split.menuCode,
+        people: JSON.parse(split.people),
+        totals: JSON.parse(split.totals),
+        createdAt: split.createdAt,
+      })));
+    } catch (error) {
+      console.error("Error fetching splits:", error);
+      res.status(500).json({ error: "Failed to fetch splits" });
     }
   });
 

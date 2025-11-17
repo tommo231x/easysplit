@@ -1,32 +1,7 @@
 import Database from "better-sqlite3";
 import { randomBytes } from "crypto";
 import path from "path";
-
-export interface MenuItem {
-  id: number;
-  menuId: number;
-  name: string;
-  price: number;
-}
-
-export interface Menu {
-  id: number;
-  code: string;
-  name: string | null;
-  currency: string;
-  createdAt: string;
-}
-
-export interface InsertMenuItem {
-  name: string;
-  price: number;
-}
-
-export interface InsertMenu {
-  name?: string;
-  currency?: string;
-  items: InsertMenuItem[];
-}
+import type { Menu, MenuItem, InsertMenu, InsertMenuItem, BillSplit, InsertBillSplit } from "@shared/schema";
 
 class DatabaseHelper {
   private db: Database.Database;
@@ -55,8 +30,24 @@ class DatabaseHelper {
         FOREIGN KEY (menu_id) REFERENCES menus(id) ON DELETE CASCADE
       );
 
+      CREATE TABLE IF NOT EXISTS bill_splits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT UNIQUE NOT NULL,
+        menu_code TEXT,
+        people TEXT NOT NULL,
+        items TEXT NOT NULL,
+        quantities TEXT NOT NULL,
+        currency TEXT NOT NULL DEFAULT '£',
+        service_charge REAL NOT NULL DEFAULT 0,
+        tip_percent REAL NOT NULL DEFAULT 0,
+        totals TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
       CREATE INDEX IF NOT EXISTS idx_menu_code ON menus(code);
       CREATE INDEX IF NOT EXISTS idx_menu_items_menu_id ON menu_items(menu_id);
+      CREATE INDEX IF NOT EXISTS idx_split_code ON bill_splits(code);
+      CREATE INDEX IF NOT EXISTS idx_split_menu_code ON bill_splits(menu_code);
     `);
 
     // Migration: Add currency column if it doesn't exist
@@ -209,6 +200,101 @@ class DatabaseHelper {
   deleteMenu(code: string): boolean {
     const result = this.db.prepare("DELETE FROM menus WHERE code = ?").run(code);
     return result.changes > 0;
+  }
+
+  createBillSplit(data: InsertBillSplit): { code: string; split: BillSplit } {
+    let code: string = "";
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    // Generate unique code checking both menus and bill_splits tables
+    while (attempts < maxAttempts) {
+      code = this.generateCode().toUpperCase();
+      const existingMenu = this.db
+        .prepare("SELECT id FROM menus WHERE code = ?")
+        .get(code);
+      const existingSplit = this.db
+        .prepare("SELECT id FROM bill_splits WHERE code = ?")
+        .get(code);
+      
+      if (!existingMenu && !existingSplit) {
+        break;
+      }
+      
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique split code");
+    }
+    
+    const insertSplit = this.db.prepare(`
+      INSERT INTO bill_splits (code, menu_code, people, items, quantities, currency, service_charge, tip_percent, totals)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    insertSplit.run(
+      code,
+      data.menuCode || null,
+      JSON.stringify(data.people),
+      JSON.stringify(data.items),
+      JSON.stringify(data.quantities),
+      data.currency,
+      data.serviceCharge,
+      data.tipPercent,
+      JSON.stringify(data.totals)
+    );
+
+    const split = this.getSplitByCode(code);
+    if (!split) {
+      throw new Error("Failed to create bill split");
+    }
+
+    return { code, split };
+  }
+
+  getSplitByCode(code: string): BillSplit | null {
+    const split = this.db
+      .prepare("SELECT * FROM bill_splits WHERE code = ?")
+      .get(code) as any;
+    
+    if (!split) {
+      return null;
+    }
+
+    return {
+      id: split.id,
+      code: split.code,
+      menuCode: split.menu_code,
+      people: split.people,
+      items: split.items,
+      quantities: split.quantities,
+      currency: split.currency,
+      serviceCharge: split.service_charge,
+      tipPercent: split.tip_percent,
+      totals: split.totals,
+      createdAt: split.created_at,
+    };
+  }
+
+  getSplitsByMenuCode(menuCode: string): BillSplit[] {
+    const splits = this.db
+      .prepare("SELECT * FROM bill_splits WHERE menu_code = ? ORDER BY created_at DESC")
+      .all(menuCode) as any[];
+    
+    return splits.map((split) => ({
+      id: split.id,
+      code: split.code,
+      menuCode: split.menu_code,
+      people: split.people,
+      items: split.items,
+      quantities: split.quantities,
+      currency: split.currency,
+      serviceCharge: split.service_charge,
+      tipPercent: split.tip_percent,
+      totals: split.totals,
+      createdAt: split.created_at,
+    }));
   }
 
   close() {

@@ -1,10 +1,12 @@
 import { Link } from "wouter";
-import { ArrowLeft, Copy, Check } from "lucide-react";
+import { ArrowLeft, Copy, Check, Share2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import type { MenuItem, Person, ItemQuantity, PersonTotal } from "@shared/schema";
 
 interface ResultsState {
@@ -14,12 +16,36 @@ interface ResultsState {
   currency: string;
   serviceCharge: number;
   tipPercent: number;
+  menuCode?: string;
+  persistedTotals?: PersonTotal[];
 }
 
 export default function Results() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [state, setState] = useState<ResultsState | null>(null);
+  const [splitCode, setSplitCode] = useState<string | null>(null);
+
+  const savedSplitCode = sessionStorage.getItem("easysplit-split-code");
+  
+  // If there's a saved split code but no state, fetch the split from API
+  const { data: savedSplit } = useQuery<{
+    code: string;
+    menuCode: string | null;
+    people: Person[];
+    items: MenuItem[];
+    quantities: ItemQuantity[];
+    currency: string;
+    serviceCharge: number;
+    tipPercent: number;
+    totals: PersonTotal[];
+    createdAt: string;
+  }>({
+    queryKey: [`/api/splits/${savedSplitCode}`],
+    enabled: !!savedSplitCode && !state,
+    retry: false,
+  });
 
   useEffect(() => {
     const sessionData = sessionStorage.getItem("easysplit-results");
@@ -27,7 +53,60 @@ export default function Results() {
       setState(JSON.parse(sessionData));
       sessionStorage.removeItem("easysplit-results");
     }
+    
+    // Restore saved split code if it exists
+    const savedCode = sessionStorage.getItem("easysplit-split-code");
+    if (savedCode) {
+      setSplitCode(savedCode);
+    }
   }, []);
+  
+  // If we loaded a saved split, populate state from it
+  useEffect(() => {
+    if (savedSplit && !state) {
+      setState({
+        items: savedSplit.items,
+        people: savedSplit.people,
+        quantities: savedSplit.quantities,
+        currency: savedSplit.currency,
+        serviceCharge: savedSplit.serviceCharge,
+        tipPercent: savedSplit.tipPercent,
+        menuCode: savedSplit.menuCode || undefined,
+        persistedTotals: savedSplit.totals,
+      });
+    }
+  }, [savedSplit, state]);
+
+  const saveSplitMutation = useMutation({
+    mutationFn: async (data: {
+      menuCode?: string;
+      people: Person[];
+      items: MenuItem[];
+      quantities: ItemQuantity[];
+      currency: string;
+      serviceCharge: number;
+      tipPercent: number;
+      totals: PersonTotal[];
+    }) => {
+      const response = await apiRequest("POST", "/api/splits", data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setSplitCode(data.code);
+      sessionStorage.setItem("easysplit-split-code", data.code);
+      toast({
+        title: "Split saved!",
+        description: "Your bill split has been saved and can be shared",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Save failed",
+        description: "Failed to save split",
+        variant: "destructive",
+      });
+    },
+  });
 
   if (!state) {
     return (
@@ -42,9 +121,14 @@ export default function Results() {
     );
   }
 
-  const { items, people, quantities, currency, serviceCharge, tipPercent } = state;
+  const { items, people, quantities, currency, serviceCharge, tipPercent, menuCode, persistedTotals } = state;
 
   const calculateTotals = (): PersonTotal[] => {
+    // If we have persisted totals, use them instead of recalculating
+    if (persistedTotals) {
+      return persistedTotals;
+    }
+    
     return people.map((person) => {
       let subtotal = 0;
 
@@ -73,6 +157,45 @@ export default function Results() {
 
   const totals = calculateTotals();
   const grandTotal = totals.reduce((sum, t) => sum + t.total, 0);
+
+  const handleSaveSplit = () => {
+    saveSplitMutation.mutate({
+      menuCode,
+      people,
+      items,
+      quantities,
+      currency,
+      serviceCharge,
+      tipPercent,
+      totals,
+    });
+  };
+
+  const shareLink = async () => {
+    if (!splitCode) return;
+    
+    const url = `${window.location.origin}/split/${splitCode}`;
+    
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Bill Split",
+          text: "Check out our bill split",
+          url,
+        });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2000);
+        toast({
+          title: "Link copied!",
+          description: "Share link copied to clipboard",
+        });
+      }
+    } catch (err) {
+      // User cancelled share
+    }
+  };
 
   const copyBreakdown = async () => {
     let text = "Bill Split Breakdown\n";
@@ -177,24 +300,67 @@ export default function Results() {
           </div>
         </Card>
 
-        <Button
-          onClick={copyBreakdown}
-          variant="outline"
-          className="w-full h-12"
-          data-testid="button-copy-breakdown"
-        >
-          {copied ? (
-            <>
-              <Check className="h-4 w-4 mr-2" />
-              Copied!
-            </>
+        {splitCode && (
+          <Card className="p-4 bg-primary/5">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Shareable link:</span>
+              <code className="flex-1 font-mono text-xs bg-background px-2 py-1 rounded border" data-testid="text-split-link">
+                {window.location.origin}/split/{splitCode}
+              </code>
+            </div>
+          </Card>
+        )}
+
+        <div className="flex gap-2">
+          <Button
+            onClick={copyBreakdown}
+            variant="outline"
+            className="flex-1"
+            data-testid="button-copy-breakdown"
+          >
+            {copied ? (
+              <>
+                <Check className="h-4 w-4 mr-2" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4 mr-2" />
+                Copy Breakdown
+              </>
+            )}
+          </Button>
+          
+          {!splitCode ? (
+            <Button
+              onClick={handleSaveSplit}
+              disabled={saveSplitMutation.isPending}
+              className="flex-1"
+              data-testid="button-save-split"
+            >
+              <Share2 className="h-4 w-4 mr-2" />
+              {saveSplitMutation.isPending ? "Saving..." : "Save & Share"}
+            </Button>
           ) : (
-            <>
-              <Copy className="h-4 w-4 mr-2" />
-              Copy Breakdown
-            </>
+            <Button
+              onClick={shareLink}
+              className="flex-1"
+              data-testid="button-share-link"
+            >
+              {linkCopied ? (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Link Copied!
+                </>
+              ) : (
+                <>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share Link
+                </>
+              )}
+            </Button>
           )}
-        </Button>
+        </div>
       </main>
     </div>
   );

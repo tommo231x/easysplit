@@ -17,6 +17,7 @@ Preferred communication style: Simple, everyday language.
 ### November 2025 - Phase 2 Features
 - **Menu Editing & Deletion**: Added PATCH and DELETE endpoints for /api/menus/:code, created edit-menu page with full CRUD operations, localStorage tracking of owned menus, and delete confirmation dialogs
 - **Multi-Currency Support**: Extended database schema with currency field (with automatic migration for existing databases), added CurrencySelector component with 8 common currencies (£, $, €, ¥, ₹, C$, A$, CHF), currency persists with menus and loads correctly in split-bill flow
+- **Shareable Bill Split Links**: Implemented bill_splits table with POST/GET /api/splits endpoints, results page "Save & Share" functionality, /split/:code view page, comprehensive Zod validation, code normalization, and persistent totals to prevent recalculation drift
 
 ## System Architecture
 
@@ -29,7 +30,8 @@ Preferred communication style: Simple, everyday language.
 - `/create-menu` - Menu creation interface
 - `/edit-menu/:code` - Menu editing interface
 - `/split-bill` - Bill splitting calculator
-- `/results` - Calculation results display
+- `/results` - Calculation results display (with save & share functionality)
+- `/split/:code` - View saved split breakdown
 - `404` - Not found page
 
 **UI Component System**: 
@@ -57,11 +59,14 @@ Preferred communication style: Simple, everyday language.
 
 **Runtime**: Node.js with Express.js HTTP server
 
-**API Design**: RESTful JSON API with four endpoints:
+**API Design**: RESTful JSON API with seven endpoints:
 - `POST /api/menus` - Create menu with items, returns generated code
 - `GET /api/menus/:code` - Retrieve menu and items by 6-character code
 - `PATCH /api/menus/:code` - Update menu name, currency, and items
 - `DELETE /api/menus/:code` - Delete menu and all items
+- `POST /api/splits` - Save bill split calculation with unique code
+- `GET /api/splits/:code` - Retrieve saved split by 6-character code
+- `GET /api/menus/:code/splits` - Get all splits associated with a menu
 
 **Data Validation**: Zod schemas for runtime type checking and validation on both API routes and shared types
 
@@ -99,6 +104,19 @@ menu_items
   - menu_id (INTEGER FOREIGN KEY)
   - name (TEXT)
   - price (NUMBER)
+
+bill_splits
+  - id (INTEGER PRIMARY KEY)
+  - code (TEXT UNIQUE, 6 characters)
+  - menu_code (TEXT, nullable, links to menu)
+  - people (TEXT, JSON array)
+  - items (TEXT, JSON array)
+  - quantities (TEXT, JSON array)
+  - currency (TEXT, default '£')
+  - service_charge (REAL)
+  - tip_percent (REAL)
+  - totals (TEXT, JSON array)
+  - created_at (TEXT timestamp)
 ```
 
 **Migration Path**: Configured for Drizzle ORM with PostgreSQL dialect (see `drizzle.config.ts`), enabling future migration to:
@@ -106,13 +124,15 @@ menu_items
 - Cloudflare D1
 - Other PostgreSQL-compatible databases
 
-**Data Not Stored**:
-- User accounts/authentication
-- Bill splitting sessions
-- Individual orders or calculations
-- People/person assignments
+**Data Storage Strategy**:
+- **Stored in Database**: Menus, menu items, and saved bill splits (with all calculation details)
+- **Ephemeral (Session/Local Storage)**: In-progress split calculations, owned menu codes
+- **Not Stored**: User accounts/authentication
 
-These are intentionally kept ephemeral in the frontend for privacy and simplicity.
+**Persistence Features**:
+- Results page persists split code to sessionStorage
+- On reload, fetches saved split from API and displays persisted totals
+- Prevents recalculation drift by using server-stored values
 
 ### External Dependencies
 
