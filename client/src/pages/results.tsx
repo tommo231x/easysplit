@@ -395,6 +395,21 @@ export default function Results() {
           })}
         </div>
 
+        {!splitCode && (
+          <div className="flex justify-center">
+            <Link href="/split-bill">
+              <Button
+                variant="outline"
+                size="lg"
+                data-testid="button-adjust-before-save"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Adjust Split
+              </Button>
+            </Link>
+          </div>
+        )}
+
         <Card className="p-6 bg-primary text-primary-foreground">
           <div className="flex justify-between items-center">
             <span className="text-xl font-bold">Grand Total</span>
