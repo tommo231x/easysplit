@@ -1,14 +1,20 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, Plus, X, Users, Calculator as CalculatorIcon } from "lucide-react";
+import { ArrowLeft, Plus, X, Users, Calculator as CalculatorIcon, History, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import type { MenuItem, Person, ItemQuantity } from "@shared/schema";
 import { nanoid } from "nanoid";
 import CurrencySelector from "@/components/currency-selector";
@@ -48,6 +54,36 @@ export default function SplitBill() {
     retry: false,
   });
 
+  const { 
+    data: splitHistory, 
+    isError: splitHistoryError,
+    isFetching: isFetchingHistory 
+  } = useQuery<Array<{
+    code: string;
+    menuCode: string | null;
+    people: Person[];
+    totals: Array<{
+      person: Person;
+      subtotal: number;
+      service: number;
+      tip: number;
+      total: number;
+    }>;
+    currency: string;
+    createdAt: string;
+  }>>({
+    queryKey: ['/api/menus', menuCode, 'splits'],
+    queryFn: async () => {
+      const response = await fetch(`/api/menus/${menuCode}/splits`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch split history');
+      }
+      return response.json();
+    },
+    enabled: !!loadedMenu && menuCode.length === 6,
+    retry: false,
+  });
+
   const handleLoadMenu = async () => {
     if (!menuCode.trim()) {
       toast({
@@ -63,6 +99,10 @@ export default function SplitBill() {
       setLoadedMenu(result.data.items);
       setCurrency(result.data.menu.currency || "£");
       setManualItems([]);
+      // Invalidate split history cache to trigger fresh fetch
+      queryClient.invalidateQueries({
+        queryKey: ['/api/menus', menuCode, 'splits']
+      });
       toast({
         title: "Menu loaded!",
         description: `Loaded ${result.data.items.length} items`,
@@ -180,6 +220,9 @@ const handleCalculate = () => {
       return;
     }
 
+    // Clear any previous split code - this is a fresh calculation
+    sessionStorage.removeItem("easysplit-split-code");
+    
     sessionStorage.setItem(
       "easysplit-results",
       JSON.stringify({
@@ -303,6 +346,80 @@ const handleCalculate = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {loadedMenu && (
+          <Collapsible>
+            <Card className="p-6">
+              <CollapsibleTrigger className="w-full" data-testid="button-toggle-history">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <History className="h-5 w-5" />
+                    <h3 className="font-medium">
+                      Past Splits {splitHistory && splitHistory.length > 0 ? `(${splitHistory.length})` : ''}
+                    </h3>
+                  </div>
+                  <ChevronRight className="h-5 w-5 transition-transform ui-state-open:rotate-90" />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-4">
+                {isFetchingHistory && (
+                  <div className="text-center py-4 text-sm text-muted-foreground">
+                    Loading history...
+                  </div>
+                )}
+                {splitHistoryError && (
+                  <div className="text-center py-4 text-sm text-destructive">
+                    Unable to load split history
+                  </div>
+                )}
+                {!isFetchingHistory && !splitHistoryError && (!splitHistory || splitHistory.length === 0) && (
+                  <div className="text-center py-4 text-sm text-muted-foreground">
+                    No past splits for this menu yet
+                  </div>
+                )}
+                {!isFetchingHistory && !splitHistoryError && splitHistory && splitHistory.length > 0 && (
+                  <div className="space-y-2">
+                    {splitHistory.map((split) => {
+                      const participantNames = split.people.map(p => p.name).join(", ");
+                      const grandTotal = split.totals.reduce((sum, t) => sum + t.total, 0);
+                      const date = new Date(split.createdAt);
+                      
+                      return (
+                        <Link key={split.code} href={`/split/${split.code}`} data-testid={`link-split-${split.code}`}>
+                          <Card className="p-4 hover-elevate active-elevate-2 cursor-pointer" data-testid={`card-split-${split.code}`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <code className="text-xs font-mono bg-muted px-2 py-1 rounded">
+                                    {split.code}
+                                  </code>
+                                  <span className="text-xs text-muted-foreground">
+                                    {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-muted-foreground truncate">
+                                  {participantNames}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-semibold" data-testid={`text-split-total-${split.code}`}>
+                                  {split.currency}{grandTotal.toFixed(2)}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {split.people.length} {split.people.length === 1 ? 'person' : 'people'}
+                                </p>
+                              </div>
+                            </div>
+                          </Card>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        )}
 
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">

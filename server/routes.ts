@@ -187,6 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         menuCode: split.menuCode,
         people: JSON.parse(split.people),
         totals: JSON.parse(split.totals),
+        currency: split.currency,
         createdAt: split.createdAt,
       })));
     } catch (error) {

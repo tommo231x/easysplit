@@ -18,6 +18,7 @@ Preferred communication style: Simple, everyday language.
 - **Menu Editing & Deletion**: Added PATCH and DELETE endpoints for /api/menus/:code, created edit-menu page with full CRUD operations, localStorage tracking of owned menus, and delete confirmation dialogs
 - **Multi-Currency Support**: Extended database schema with currency field (with automatic migration for existing databases), added CurrencySelector component with 8 common currencies (£, $, €, ¥, ₹, C$, A$, CHF), currency persists with menus and loads correctly in split-bill flow
 - **Shareable Bill Split Links**: Implemented bill_splits table with POST/GET /api/splits endpoints, results page "Save & Share" functionality, /split/:code view page, comprehensive Zod validation, code normalization, and persistent totals to prevent recalculation drift
+- **Bill History**: Added collapsible "Past Splits" section on split-bill page showing all previous splits for loaded menus, with GET /api/menus/:code/splits endpoint, React Query auto-fetch with cache invalidation, complete state management (loading/error/empty/data), split cards displaying code/date/participants/totals, currency preservation (each split displays its saved currency even after menu currency changes), and navigation to split detail pages
 
 ## System Architecture
 
