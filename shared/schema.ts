@@ -72,11 +72,19 @@ export const billSplitSchema = z.object({
   createdAt: z.string(),
 });
 
+// Bill split item schema (allows items without menuId for manual splits)
+export const billSplitItemSchema = z.object({
+  id: z.number(),
+  menuId: z.number().optional(),
+  name: z.string(),
+  price: z.number(),
+});
+
 // Insert schema for bill splits
 export const insertBillSplitSchema = z.object({
-  menuCode: z.string().optional(),
+  menuCode: z.string().nullable().optional(),
   people: z.array(personSchema).min(1),
-  items: z.array(menuItemSchema).min(1),
+  items: z.array(billSplitItemSchema).min(1),
   quantities: z.array(itemQuantitySchema).min(1),
   currency: z.string().min(1),
   serviceCharge: z.number().min(0).max(100).finite(),

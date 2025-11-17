@@ -1,5 +1,5 @@
 import { useRoute, Link } from "wouter";
-import { ArrowLeft, Copy, Check } from "lucide-react";
+import { ArrowLeft, Copy, Check, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -256,6 +256,13 @@ export default function ViewSplit() {
             </span>
           </div>
         </Card>
+
+        <Link href={`/adjust-split/${code}`}>
+          <Button variant="default" className="w-full mb-2" data-testid="button-adjust-split">
+            <Edit className="h-4 w-4 mr-2" />
+            Adjust Split
+          </Button>
+        </Link>
 
         <div className="flex gap-2">
           <Button onClick={copyBreakdown} variant="outline" className="flex-1" data-testid="button-copy-breakdown">

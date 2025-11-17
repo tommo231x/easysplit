@@ -114,9 +114,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/splits", async (req, res) => {
     try {
+      console.log("[POST /api/splits] Request body:", JSON.stringify(req.body, null, 2));
       const validationResult = insertBillSplitSchema.safeParse(req.body);
       
       if (!validationResult.success) {
+        console.log("[POST /api/splits] Validation failed:", JSON.stringify(validationResult.error.errors, null, 2));
         res.status(400).json({ 
           error: "Invalid split data",
           details: validationResult.error.errors,
