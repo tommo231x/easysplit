@@ -58,6 +58,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/menus/:code", async (req, res) => {
+    try {
+      const code = req.params.code.toUpperCase();
+      
+      if (code.length !== 6) {
+        res.status(400).json({ error: "Menu code must be 6 characters" });
+        return;
+      }
+
+      const validated = insertMenuSchema.parse(req.body);
+      const result = db.updateMenu(code, validated);
+      
+      if (!result) {
+        res.status(404).json({ error: "Menu not found" });
+        return;
+      }
+
+      res.json(result);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Validation error", details: error.errors });
+      } else {
+        console.error("Error updating menu:", error);
+        res.status(500).json({ error: "Failed to update menu" });
+      }
+    }
+  });
+
+  app.delete("/api/menus/:code", async (req, res) => {
+    try {
+      const code = req.params.code.toUpperCase();
+      
+      if (code.length !== 6) {
+        res.status(400).json({ error: "Menu code must be 6 characters" });
+        return;
+      }
+
+      const success = db.deleteMenu(code);
+      
+      if (!success) {
+        res.status(404).json({ error: "Menu not found" });
+        return;
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting menu:", error);
+      res.status(500).json({ error: "Failed to delete menu" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Copy, Check, Share2 } from "lucide-react";
+import { Copy, Check, Share2, Edit } from "lucide-react";
+import { Link } from "wouter";
 import {
   Dialog,
   DialogContent,
@@ -125,6 +126,13 @@ const shareUrl = `${window.location.origin}/split-bill?code=${code}`;
           <p className="text-sm text-muted-foreground text-center">
             Others can use this code to load your menu when splitting a bill
           </p>
+
+          <Link href={`/edit-menu/${code}`}>
+            <Button variant="outline" className="w-full" data-testid="button-edit-menu">
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Menu
+            </Button>
+          </Link>
         </div>
       </DialogContent>
     </Dialog>

@@ -26,6 +26,13 @@ const createMenuMutation = useMutation({
       return response.json();
     },
     onSuccess: (data: { code: string }) => {
+      // Store menu code in localStorage for tracking
+      const ownedMenus = JSON.parse(localStorage.getItem("easysplit-menus") || "[]");
+      if (!ownedMenus.includes(data.code)) {
+        ownedMenus.push(data.code);
+        localStorage.setItem("easysplit-menus", JSON.stringify(ownedMenus));
+      }
+      
       setMenuCode(data.code);
       setShowModal(true);
       toast({

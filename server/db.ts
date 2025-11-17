@@ -160,6 +160,38 @@ class DatabaseHelper {
     return { menu, items };
   }
 
+  updateMenu(code: string, data: InsertMenu): { menu: Menu; items: MenuItem[] } | null {
+    const existing = this.getMenuByCode(code);
+    if (!existing) {
+      return null;
+    }
+
+    // Update menu name
+    this.db.prepare("UPDATE menus SET name = ? WHERE code = ?").run(data.name || null, code);
+
+    // Delete existing items and insert new ones
+    this.db.prepare("DELETE FROM menu_items WHERE menu_id = ?").run(existing.id);
+
+    const insertItem = this.db.prepare(
+      "INSERT INTO menu_items (menu_id, name, price) VALUES (?, ?, ?)"
+    );
+
+    const insertMany = this.db.transaction((items: InsertMenuItem[]) => {
+      for (const item of items) {
+        insertItem.run(existing.id, item.name, item.price);
+      }
+    });
+
+    insertMany(data.items);
+
+    return this.getMenuWithItems(code);
+  }
+
+  deleteMenu(code: string): boolean {
+    const result = this.db.prepare("DELETE FROM menus WHERE code = ?").run(code);
+    return result.changes > 0;
+  }
+
   close() {
     this.db.close();
   }

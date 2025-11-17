@@ -7,6 +7,7 @@ import Home from "@/pages/home";
 import CreateMenu from "@/pages/create-menu";
 import SplitBill from "@/pages/split-bill";
 import Results from "@/pages/results";
+import EditMenu from "@/pages/edit-menu";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/create-menu" component={CreateMenu} />
       <Route path="/split-bill" component={SplitBill} />
       <Route path="/results" component={Results} />
+      <Route path="/edit-menu/:code" component={EditMenu} />
       <Route component={NotFound} />
     </Switch>
   );
