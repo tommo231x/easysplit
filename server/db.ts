@@ -13,6 +13,7 @@ export interface Menu {
   id: number;
   code: string;
   name: string | null;
+  currency: string;
   createdAt: string;
 }
 
@@ -23,6 +24,7 @@ export interface InsertMenuItem {
 
 export interface InsertMenu {
   name?: string;
+  currency?: string;
   items: InsertMenuItem[];
 }
 
@@ -41,6 +43,7 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         code TEXT UNIQUE NOT NULL,
         name TEXT,
+        currency TEXT NOT NULL DEFAULT '£',
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
 
@@ -55,6 +58,19 @@ class DatabaseHelper {
       CREATE INDEX IF NOT EXISTS idx_menu_code ON menus(code);
       CREATE INDEX IF NOT EXISTS idx_menu_items_menu_id ON menu_items(menu_id);
     `);
+
+    // Migration: Add currency column if it doesn't exist
+    try {
+      const tableInfo = this.db.pragma("table_info(menus)");
+      const hasCurrency = tableInfo.some((col: any) => col.name === "currency");
+      
+      if (!hasCurrency) {
+        this.db.exec("ALTER TABLE menus ADD COLUMN currency TEXT NOT NULL DEFAULT '£'");
+        console.log("Migration: Added currency column to menus table");
+      }
+    } catch (error) {
+      console.error("Migration error:", error);
+    }
   }
 
   private generateCode(): string {
@@ -92,12 +108,13 @@ class DatabaseHelper {
 
   createMenu(data: InsertMenu): { code: string; menu: Menu } {
     const code = this.generateUniqueCode();
+    const currency = data.currency || "£";
     
     const insertMenu = this.db.prepare(
-      "INSERT INTO menus (code, name) VALUES (?, ?)"
+      "INSERT INTO menus (code, name, currency) VALUES (?, ?, ?)"
     );
     
-    const result = insertMenu.run(code, data.name || null);
+    const result = insertMenu.run(code, data.name || null, currency);
     const menuId = result.lastInsertRowid as number;
 
     const insertItem = this.db.prepare(
@@ -133,6 +150,7 @@ class DatabaseHelper {
       id: menu.id,
       code: menu.code,
       name: menu.name,
+      currency: menu.currency || "£",
       createdAt: menu.created_at,
     };
   }
@@ -166,8 +184,9 @@ class DatabaseHelper {
       return null;
     }
 
-    // Update menu name
-    this.db.prepare("UPDATE menus SET name = ? WHERE code = ?").run(data.name || null, code);
+    // Update menu name and currency
+    this.db.prepare("UPDATE menus SET name = ?, currency = ? WHERE code = ?")
+      .run(data.name || null, data.currency || "£", code);
 
     // Delete existing items and insert new ones
     this.db.prepare("DELETE FROM menu_items WHERE menu_id = ?").run(existing.id);

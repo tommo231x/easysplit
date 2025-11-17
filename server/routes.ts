@@ -10,6 +10,7 @@ const insertMenuItemSchema = z.object({
 
 const insertMenuSchema = z.object({
   name: z.string().optional(),
+  currency: z.string().default("£"),
   items: z
     .array(insertMenuItemSchema)
     .min(1, "At least one menu item is required"),

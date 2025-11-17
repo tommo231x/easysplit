@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import type { MenuItem, Person, ItemQuantity } from "@shared/schema";
 import { nanoid } from "nanoid";
+import CurrencySelector from "@/components/currency-selector";
 
 export default function SplitBill() {
   const [, setLocation] = useLocation();
@@ -60,6 +61,7 @@ export default function SplitBill() {
     const result = await loadMenu();
     if (result.data) {
       setLoadedMenu(result.data.items);
+      setCurrency(result.data.menu.currency || "£");
       setManualItems([]);
       toast({
         title: "Menu loaded!",
@@ -404,49 +406,43 @@ const handleCalculate = () => {
 
         <Card className="p-6">
           <h3 className="font-medium mb-4">Calculation Settings</h3>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="currency" className="text-sm mb-2 block">
-                Currency
-              </Label>
-              <Input
-                id="currency"
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className="h-12 text-center"
-                maxLength={3}
-                data-testid="input-currency"
-              />
-            </div>
-            <div>
-              <Label htmlFor="service" className="text-sm mb-2 block">
-                Service (%)
-              </Label>
-              <Input
-                id="service"
-                type="number"
-                value={serviceCharge}
-                onChange={(e) => setServiceCharge(parseFloat(e.target.value) || 0)}
-                className="h-12"
-                step="0.5"
-                min="0"
-                data-testid="input-service-charge"
-              />
-            </div>
-            <div>
-              <Label htmlFor="tip" className="text-sm mb-2 block">
-                Tip (%)
-              </Label>
-              <Input
-                id="tip"
-                type="number"
-                value={tipPercent}
-                onChange={(e) => setTipPercent(parseFloat(e.target.value) || 0)}
-                className="h-12"
-                step="0.5"
-                min="0"
-                data-testid="input-tip-percent"
-              />
+          <div className="space-y-4">
+            <CurrencySelector 
+              value={currency} 
+              onChange={setCurrency}
+              testId="select-currency"
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="service" className="text-sm mb-2 block">
+                  Service (%)
+                </Label>
+                <Input
+                  id="service"
+                  type="number"
+                  value={serviceCharge}
+                  onChange={(e) => setServiceCharge(parseFloat(e.target.value) || 0)}
+                  className="h-12"
+                  step="0.5"
+                  min="0"
+                  data-testid="input-service-charge"
+                />
+              </div>
+              <div>
+                <Label htmlFor="tip" className="text-sm mb-2 block">
+                  Tip (%)
+                </Label>
+                <Input
+                  id="tip"
+                  type="number"
+                  value={tipPercent}
+                  onChange={(e) => setTipPercent(parseFloat(e.target.value) || 0)}
+                  className="h-12"
+                  step="0.5"
+                  min="0"
+                  data-testid="input-tip-percent"
+                />
+              </div>
             </div>
           </div>
         </Card>

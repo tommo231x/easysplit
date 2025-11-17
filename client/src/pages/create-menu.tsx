@@ -11,9 +11,11 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertMenuItem } from "@shared/schema";
 import MenuCodeModal from "@/components/menu-code-modal";
+import CurrencySelector from "@/components/currency-selector";
 
 export default function CreateMenu() {
   const [menuName, setMenuName] = useState("");
+  const [currency, setCurrency] = useState("£");
   const [pasteText, setPasteText] = useState("");
   const [items, setItems] = useState<InsertMenuItem[]>([]);
   const [showModal, setShowModal] = useState(false);
@@ -21,7 +23,7 @@ export default function CreateMenu() {
   const { toast } = useToast();
 
 const createMenuMutation = useMutation({
-    mutationFn: async (data: { name?: string; items: InsertMenuItem[] }) => {
+    mutationFn: async (data: { name?: string; currency?: string; items: InsertMenuItem[] }) => {
       const response = await apiRequest("POST", "/api/menus", data);
       return response.json();
     },
@@ -118,6 +120,7 @@ const createMenuMutation = useMutation({
 
     createMenuMutation.mutate({
       name: menuName || undefined,
+      currency,
       items: validItems,
     });
   };
@@ -147,6 +150,8 @@ const createMenuMutation = useMutation({
             data-testid="input-menu-name"
           />
         </div>
+
+        <CurrencySelector value={currency} onChange={setCurrency} />
 
         {items.length === 0 && (
           <Card className="p-6">

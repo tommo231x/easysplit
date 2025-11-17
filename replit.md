@@ -12,6 +12,12 @@ The application supports two primary workflows:
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### November 2025 - Phase 2 Features
+- **Menu Editing & Deletion**: Added PATCH and DELETE endpoints for /api/menus/:code, created edit-menu page with full CRUD operations, localStorage tracking of owned menus, and delete confirmation dialogs
+- **Multi-Currency Support**: Extended database schema with currency field (with automatic migration for existing databases), added CurrencySelector component with 8 common currencies (£, $, €, ¥, ₹, C$, A$, CHF), currency persists with menus and loads correctly in split-bill flow
+
 ## System Architecture
 
 ### Frontend Architecture
@@ -21,6 +27,7 @@ Preferred communication style: Simple, everyday language.
 **Routing**: Wouter for lightweight client-side routing with the following pages:
 - `/` - Home page with two main action buttons
 - `/create-menu` - Menu creation interface
+- `/edit-menu/:code` - Menu editing interface
 - `/split-bill` - Bill splitting calculator
 - `/results` - Calculation results display
 - `404` - Not found page
@@ -50,9 +57,11 @@ Preferred communication style: Simple, everyday language.
 
 **Runtime**: Node.js with Express.js HTTP server
 
-**API Design**: RESTful JSON API with two endpoints:
+**API Design**: RESTful JSON API with four endpoints:
 - `POST /api/menus` - Create menu with items, returns generated code
 - `GET /api/menus/:code` - Retrieve menu and items by 6-character code
+- `PATCH /api/menus/:code` - Update menu name, currency, and items
+- `DELETE /api/menus/:code` - Delete menu and all items
 
 **Data Validation**: Zod schemas for runtime type checking and validation on both API routes and shared types
 
@@ -82,6 +91,7 @@ menus
   - id (INTEGER PRIMARY KEY)
   - code (TEXT UNIQUE, 6 characters)
   - name (TEXT, optional)
+  - currency (TEXT, default '£')
   - created_at (TEXT timestamp)
 
 menu_items

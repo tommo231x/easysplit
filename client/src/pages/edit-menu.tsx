@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { InsertMenuItem } from "@shared/schema";
+import CurrencySelector from "@/components/currency-selector";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,11 +26,12 @@ export default function EditMenu() {
   const code = params?.code?.toUpperCase() || "";
   const [, setLocation] = useLocation();
   const [menuName, setMenuName] = useState("");
+  const [currency, setCurrency] = useState("£");
   const [items, setItems] = useState<InsertMenuItem[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
-  const { data, isLoading } = useQuery<{ menu: { name: string | null }; items: Array<{ name: string; price: number }> }>({
+  const { data, isLoading } = useQuery<{ menu: { name: string | null; currency: string }; items: Array<{ name: string; price: number }> }>({
     queryKey: ["/api/menus", code],
     queryFn: async () => {
       const response = await fetch(`/api/menus/${code}`);
@@ -45,12 +47,13 @@ export default function EditMenu() {
   useEffect(() => {
     if (data) {
       setMenuName(data.menu.name || "");
+      setCurrency(data.menu.currency || "£");
       setItems(data.items.map((item) => ({ name: item.name, price: item.price })));
     }
   }, [data]);
 
   const updateMenuMutation = useMutation({
-    mutationFn: async (payload: { name?: string; items: InsertMenuItem[] }) => {
+    mutationFn: async (payload: { name?: string; currency?: string; items: InsertMenuItem[] }) => {
       const response = await apiRequest("PATCH", `/api/menus/${code}`, payload);
       return response.json();
     },
@@ -109,6 +112,7 @@ export default function EditMenu() {
 
     updateMenuMutation.mutate({
       name: menuName || undefined,
+      currency,
       items: validItems,
     });
   };
@@ -183,6 +187,8 @@ export default function EditMenu() {
             data-testid="input-menu-name"
           />
         </div>
+
+        <CurrencySelector value={currency} onChange={setCurrency} />
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">

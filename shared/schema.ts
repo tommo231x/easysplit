@@ -5,6 +5,7 @@ export const menuSchema = z.object({
   id: z.number(),
   code: z.string().length(6),
   name: z.string().optional(),
+  currency: z.string().default("£"),
   createdAt: z.string(),
 });
 
@@ -18,6 +19,7 @@ export const menuItemSchema = z.object({
 // Insert schemas for API
 export const insertMenuSchema = z.object({
   name: z.string().optional(),
+  currency: z.string().default("£"),
   items: z.array(z.object({
     name: z.string().min(1, "Item name is required"),
     price: z.number().positive("Price must be positive"),
