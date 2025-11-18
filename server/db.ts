@@ -293,6 +293,47 @@ class DatabaseHelper {
     };
   }
 
+  updateBillSplit(code: string, data: InsertBillSplit): { code: string; split: BillSplit } | null {
+    const existing = this.getSplitByCode(code);
+    if (!existing) {
+      return null;
+    }
+
+    const updateSplit = this.db.prepare(`
+      UPDATE bill_splits 
+      SET name = ?, 
+          menu_code = ?, 
+          people = ?, 
+          items = ?, 
+          quantities = ?, 
+          currency = ?, 
+          service_charge = ?, 
+          tip_percent = ?, 
+          totals = ?
+      WHERE code = ?
+    `);
+    
+    updateSplit.run(
+      data.name || null,
+      data.menuCode || null,
+      JSON.stringify(data.people),
+      JSON.stringify(data.items),
+      JSON.stringify(data.quantities),
+      data.currency,
+      data.serviceCharge,
+      data.tipPercent,
+      JSON.stringify(data.totals),
+      code
+    );
+
+    const split = this.getSplitByCode(code);
+    if (!split) {
+      throw new Error("Failed to update bill split");
+    }
+
+    return { code, split };
+  }
+
   getSplitsByMenuCode(menuCode: string): BillSplit[] {
     const splits = this.db
       .prepare("SELECT * FROM bill_splits WHERE menu_code = ? ORDER BY created_at DESC")

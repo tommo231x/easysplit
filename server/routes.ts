@@ -174,6 +174,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/splits/:code", async (req, res) => {
+    try {
+      const code = req.params.code.toUpperCase();
+      
+      if (code.length !== 6) {
+        res.status(400).json({ error: "Split code must be 6 characters" });
+        return;
+      }
+
+      console.log("[PATCH /api/splits/:code] Request body:", JSON.stringify(req.body, null, 2));
+      const validationResult = insertBillSplitSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        console.log("[PATCH /api/splits/:code] Validation failed:", JSON.stringify(validationResult.error.errors, null, 2));
+        res.status(400).json({ 
+          error: "Invalid split data",
+          details: validationResult.error.errors,
+        });
+        return;
+      }
+      
+      const data = validationResult.data as InsertBillSplit;
+      const result = db.updateBillSplit(code, data);
+      
+      if (!result) {
+        res.status(404).json({ error: "Split not found" });
+        return;
+      }
+
+      res.json({
+        code: result.code,
+        split: result.split,
+      });
+    } catch (error) {
+      console.error("Error updating split:", error);
+      res.status(500).json({ error: "Failed to update split" });
+    }
+  });
+
   app.get("/api/menus/:code/splits", async (req, res) => {
     try {
       const code = req.params.code.toUpperCase();
