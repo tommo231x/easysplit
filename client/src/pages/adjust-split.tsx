@@ -30,6 +30,9 @@ export default function AdjustSplit() {
   const [currency, setCurrency] = useState("£");
   const [menuCode, setMenuCode] = useState<string | null>(null);
   const [splitName, setSplitName] = useState<string | null>(null);
+  
+  const [newItemName, setNewItemName] = useState("");
+  const [newItemPrice, setNewItemPrice] = useState("");
 
   const { data: originalSplit, isLoading } = useQuery<{
     code: string;
@@ -152,6 +155,33 @@ export default function AdjustSplit() {
       extraContribution: 0,
     };
     setPeople([...people, newPerson]);
+  };
+  
+  const addItem = () => {
+    if (!newItemName.trim() || !newItemPrice || parseFloat(newItemPrice) <= 0) {
+      toast({
+        title: "Invalid item",
+        description: "Please enter a valid item name and price",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const newItem: MenuItem = {
+      id: Date.now(),
+      menuId: 0,
+      name: newItemName.trim(),
+      price: parseFloat(newItemPrice),
+    };
+    
+    setItems([...items, newItem]);
+    setNewItemName("");
+    setNewItemPrice("");
+    
+    toast({
+      title: "Item added",
+      description: `${newItem.name} added to the bill`,
+    });
   };
 
   const removePerson = (personId: string) => {
@@ -448,6 +478,47 @@ export default function AdjustSplit() {
           <Plus className="h-4 w-4 mr-2" />
           Add Person
         </Button>
+
+        <Card className="p-6">
+          <h3 className="font-semibold mb-4">Add New Item</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Add items that weren't on the original bill (like a side dish someone forgot)
+          </p>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="new-item-name">Item Name</Label>
+              <Input
+                id="new-item-name"
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+                placeholder="e.g., Side Salad"
+                data-testid="input-new-item-name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="new-item-price">Price ({currency})</Label>
+              <Input
+                id="new-item-price"
+                type="number"
+                min="0"
+                step="0.01"
+                value={newItemPrice}
+                onChange={(e) => setNewItemPrice(e.target.value)}
+                placeholder="0.00"
+                data-testid="input-new-item-price"
+              />
+            </div>
+            <Button
+              onClick={addItem}
+              variant="outline"
+              className="w-full"
+              data-testid="button-add-item"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Item to Bill
+            </Button>
+          </div>
+        </Card>
 
         <Card className="p-6 bg-primary/5">
           <div className="flex justify-between items-center">
