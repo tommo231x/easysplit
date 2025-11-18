@@ -12,6 +12,17 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -312,15 +323,32 @@ const handleCalculate = () => {
           </Button>
         </Link>
         <h1 className="text-xl font-semibold flex-1">Split Bill</h1>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleNewSplit}
-          data-testid="button-new-split"
-        >
-          <FilePlus className="h-4 w-4 mr-2" />
-          New Split
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              data-testid="button-new-split"
+            >
+              <FilePlus className="h-4 w-4 mr-2" />
+              New Split
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Start a new split?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will clear all current data including items, people, and calculations. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel data-testid="button-cancel-new-split">Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleNewSplit} data-testid="button-confirm-new-split">
+                Start New Split
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
