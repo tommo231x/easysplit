@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, Copy, Check, Share2, Edit, Link as LinkIcon } from "lucide-react";
+import { ArrowLeft, Copy, Check, Share2, Edit, Link as LinkIcon, CheckCircle2, XCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { MenuItem, Person, ItemQuantity, PersonTotal } from "@shared/schema";
+import { setSplitStatus, getSplitStatus } from "@/lib/split-status";
 
 interface ResultsState {
   items: MenuItem[];
@@ -31,6 +32,7 @@ export default function Results() {
   const [state, setState] = useState<ResultsState | null>(null);
   const [splitCode, setSplitCode] = useState<string | null>(null);
   const [splitName, setSplitName] = useState<string>("");
+  const [splitStatus, setSplitStatusState] = useState<"open" | "closed">("open");
 
   const savedSplitCode = sessionStorage.getItem("easysplit-split-code");
   
@@ -88,6 +90,14 @@ export default function Results() {
       setSplitName(savedSplit.name || "");
     }
   }, [savedSplit, state]);
+  
+  // Load split status when code changes
+  useEffect(() => {
+    if (splitCode) {
+      const status = getSplitStatus(splitCode);
+      setSplitStatusState(status);
+    }
+  }, [splitCode]);
 
   const saveSplitMutation = useMutation({
     mutationFn: async (data: {
@@ -119,6 +129,10 @@ export default function Results() {
           queryKey: ['/api/splits/batch']
         });
       }
+      
+      // Mark split as open
+      setSplitStatus(data.code, "open");
+      setSplitStatusState("open");
       
       toast({
         title: "Split saved!",
@@ -195,6 +209,21 @@ export default function Results() {
       serviceCharge,
       tipPercent,
       totals,
+    });
+  };
+
+  const toggleSplitStatus = () => {
+    if (!splitCode) return;
+    
+    const newStatus = splitStatus === "open" ? "closed" : "open";
+    setSplitStatus(splitCode, newStatus);
+    setSplitStatusState(newStatus);
+    
+    toast({
+      title: newStatus === "closed" ? "Split closed" : "Split reopened",
+      description: newStatus === "closed" 
+        ? "This split is marked as finished" 
+        : "This split is now active again",
     });
   };
 
@@ -493,15 +522,35 @@ export default function Results() {
               {saveSplitMutation.isPending ? "Saving..." : "Save & Share"}
             </Button>
           ) : (
-            <Button
-              onClick={() => navigate(`/adjust-split/${splitCode}`)}
-              variant="outline"
-              className="flex-1"
-              data-testid="button-adjust-split"
-            >
-              <Edit className="h-4 w-4 mr-2" />
-              Adjust Split
-            </Button>
+            <>
+              <Button
+                onClick={() => navigate(`/adjust-split/${splitCode}`)}
+                variant="outline"
+                className="flex-1"
+                data-testid="button-adjust-split"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Adjust Split
+              </Button>
+              <Button
+                onClick={toggleSplitStatus}
+                variant={splitStatus === "open" ? "destructive" : "default"}
+                className="flex-1"
+                data-testid="button-toggle-status"
+              >
+                {splitStatus === "open" ? (
+                  <>
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Close Split
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Reopen Split
+                  </>
+                )}
+              </Button>
+            </>
           )}
         </div>
       </main>

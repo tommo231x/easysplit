@@ -1,11 +1,12 @@
 import { useRoute, Link } from "wouter";
-import { ArrowLeft, Copy, Check, Edit, Link as LinkIcon, Share2 } from "lucide-react";
+import { ArrowLeft, Copy, Check, Edit, Link as LinkIcon, Share2, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { setSplitStatus, getSplitStatus } from "@/lib/split-status";
 
 export default function ViewSplit() {
   const [, params] = useRoute("/split/:code");
@@ -13,6 +14,15 @@ export default function ViewSplit() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [splitStatus, setSplitStatusState] = useState<"open" | "closed">("open");
+  
+  // Load split status when code changes
+  useEffect(() => {
+    if (code) {
+      const status = getSplitStatus(code);
+      setSplitStatusState(status);
+    }
+  }, [code]);
 
   const { data, isLoading } = useQuery<{
     code: string;
@@ -132,6 +142,21 @@ export default function ViewSplit() {
     } catch (err) {
       // User cancelled share
     }
+  };
+
+  const toggleSplitStatus = () => {
+    if (!code) return;
+    
+    const newStatus = splitStatus === "open" ? "closed" : "open";
+    setSplitStatus(code, newStatus);
+    setSplitStatusState(newStatus);
+    
+    toast({
+      title: newStatus === "closed" ? "Split closed" : "Split reopened",
+      description: newStatus === "closed" 
+        ? "This split is marked as finished" 
+        : "This split is now active again",
+    });
   };
 
   if (isLoading) {
@@ -332,6 +357,24 @@ export default function ViewSplit() {
               Adjust Split
             </Button>
           </Link>
+          <Button
+            onClick={toggleSplitStatus}
+            variant={splitStatus === "open" ? "destructive" : "default"}
+            className="flex-1"
+            data-testid="button-toggle-status"
+          >
+            {splitStatus === "open" ? (
+              <>
+                <XCircle className="h-4 w-4 mr-2" />
+                Close
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Reopen
+              </>
+            )}
+          </Button>
         </div>
       </main>
     </div>
