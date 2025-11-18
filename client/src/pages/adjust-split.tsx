@@ -348,9 +348,9 @@ export default function AdjustSplit() {
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Original Split: {code}</h2>
+          <h2 className="text-lg font-semibold mb-4">Adjusting Split: {code}</h2>
           <p className="text-sm text-muted-foreground">
-            Edit participant names, change quantities, or add extra contributions. This will create a new split.
+            Edit participant names, change quantities, or add extra contributions. Changes will update this split for everyone with the link.
           </p>
         </Card>
 
