@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, Plus, X, Users, Calculator as CalculatorIcon, History, ChevronRight } from "lucide-react";
+import { ArrowLeft, Plus, X, Users, Calculator as CalculatorIcon, History, ChevronRight, FilePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -209,6 +209,31 @@ export default function SplitBill() {
     });
   };
 
+  const handleNewSplit = () => {
+    // Clear all session storage
+    sessionStorage.removeItem("easysplit-form-state");
+    sessionStorage.removeItem("easysplit-split-code");
+    sessionStorage.removeItem("easysplit-results");
+    sessionStorage.removeItem("easysplit-results-state");
+    
+    // Reset all form state
+    setMenuCode("");
+    setLoadedMenu(null);
+    setManualItems([]);
+    setPeople([]);
+    setNewPersonName("");
+    setQuantities([]);
+    setCurrency("£");
+    setServiceCharge(12.5);
+    setTipPercent(0);
+    setSplitName("");
+    
+    toast({
+      title: "New split started",
+      description: "All fields have been cleared",
+    });
+  };
+
 const handleCalculate = () => {
     const items = loadedMenu || manualItems;
 
@@ -286,7 +311,16 @@ const handleCalculate = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </Link>
-        <h1 className="text-xl font-semibold">Split Bill</h1>
+        <h1 className="text-xl font-semibold flex-1">Split Bill</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleNewSplit}
+          data-testid="button-new-split"
+        >
+          <FilePlus className="h-4 w-4 mr-2" />
+          New Split
+        </Button>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
