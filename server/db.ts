@@ -81,9 +81,9 @@ class DatabaseHelper {
   private generateCode(): string {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let code = "";
-    const bytes = randomBytes(6);
+    const bytes = randomBytes(8); // Generate 8 random bytes for 8-character codes
     
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 8; i++) { // Generate 8 characters instead of 6
       code += chars[bytes[i] % chars.length];
     }
     

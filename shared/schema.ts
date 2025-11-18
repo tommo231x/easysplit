@@ -3,7 +3,7 @@ import { z } from "zod";
 // Menu schemas for database
 export const menuSchema = z.object({
   id: z.number(),
-  code: z.string().length(6),
+  code: z.string().min(6).max(8), // Accept both 6-character (legacy) and 8-character codes
   name: z.string().optional(),
   currency: z.string().default("£"),
   createdAt: z.string(),
@@ -60,9 +60,9 @@ export const personTotalSchema = z.object({
 // Bill split database schema
 export const billSplitSchema = z.object({
   id: z.number(),
-  code: z.string().length(6),
+  code: z.string().min(6).max(8), // Accept both 6-character (legacy) and 8-character codes
   name: z.string().nullable().optional(),
-  menuCode: z.string().nullable(),
+  menuCode: z.string().min(6).max(8).nullable(), // Accept both 6 and 8 character menu codes
   people: z.string(), // JSON array
   items: z.string(), // JSON array
   quantities: z.string(), // JSON array

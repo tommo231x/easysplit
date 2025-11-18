@@ -1,0 +1,54 @@
+I want to improve the security and robustness of this app without changing how it currently behaves in practice. I still want to see detailed logs while I’m building and testing it. Please apply the following changes:
+
+---
+
+### 1. Strengthen the share code system
+Currently menu and split share codes are 6 characters long. Please change the share code generator so that codes are 8 characters instead. Make sure:
+
+- The generator still uses secure random bytes as it does now.
+- The alphabet stays the same (A–Z and 0–9).
+- All validation checks are updated (for example Zod schemas and route handlers must accept exactly 8 characters).
+- Database lookups, indexes, and any code using the codes are updated accordingly.
+- Existing items in the database with 6-character codes must still work and be retrievable – do NOT break existing data. New codes should be 8 characters; old ones should continue to be accepted.
+
+---
+
+### 2. Add light rate limiting to prevent brute force attacks
+Add simple per-IP rate limiting middleware to the Express server. Requirements:
+
+- Limit repeated requests to routes like `/api/menus/:code` and `/api/splits/:code` to reduce brute-force guessing of codes.
+- Use a lightweight in-memory limit (e.g. express-rate-limit or a small custom middleware).
+- A reasonable starting point is something like 50–100 requests per 10 minutes per IP for these code-based GET routes.
+- Make sure this does NOT get in the way of normal usage (creating menus, viewing menus, creating splits, viewing splits).
+
+Apply the rate limiting only where it makes sense (primarily the GET-by-code routes), not globally.
+
+---
+
+### 3. Keep detailed logs, but make them configurable
+Right now the server logs full request bodies for some POST and PATCH routes. I want to:
+
+- Keep the current detailed logging behaviour ON by default (so it should behave exactly as it does now for me on Replit).
+- Introduce a simple configuration flag, e.g. `ENABLE_DEBUG_LOGS` (read from an environment variable or a small config constant).
+- When `ENABLE_DEBUG_LOGS` is true or undefined, keep logging detailed information like now.
+- When `ENABLE_DEBUG_LOGS` is false, reduce logs to minimal information (route name + success/failure), and avoid printing full request bodies.
+
+The main point is: by default the app should continue behaving exactly the same, but I should have an easy switch to turn logs down later without editing lots of code.
+
+---
+
+### 4. Optional relational integrity improvement (only if safe)
+If it is straightforward to do without breaking existing data, improve the relationship between bill splits and menus:
+
+- Validate `bill_splits.menu_code` against existing menus where appropriate.
+- If there is a simple, non-destructive way to enforce that a split’s `menu_code` refers to a real menu, implement it.
+- If this would require a risky migration or could break old data, skip it and just leave a comment in the code explaining why.
+
+---
+
+### Important rules:
+- Do NOT break any existing features or flows.
+- Do NOT change API response shapes.
+- Do NOT introduce any mandatory login or auth – the app must remain usable without sign-in.
+- Existing 6-character codes must keep working; new ones should be generated as 8 characters.
+- After you finish, please summarise the code changes you made.

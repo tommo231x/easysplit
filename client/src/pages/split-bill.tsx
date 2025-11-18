@@ -111,7 +111,7 @@ export default function SplitBill() {
       }
       return response.json();
     },
-    enabled: !!loadedMenu && menuCode.length === 6,
+    enabled: !!loadedMenu && menuCode.length >= 6 && menuCode.length <= 8,
     retry: false,
   });
 
@@ -119,7 +119,7 @@ export default function SplitBill() {
     if (!menuCode.trim()) {
       toast({
         title: "Enter menu code",
-        description: "Please enter a 6-character menu code",
+        description: "Please enter a menu code",
         variant: "destructive",
       });
       return;
@@ -387,11 +387,11 @@ const handleCalculate = () => {
               <div className="flex gap-2">
                 <Input
                   id="menu-code"
-                  placeholder="ABC123"
+                  placeholder="ABC12345"
                   value={menuCode}
                   onChange={(e) => setMenuCode(e.target.value.toUpperCase())}
                   className="h-12 font-mono text-lg"
-                  maxLength={6}
+                  maxLength={8}
                   data-testid="input-menu-code"
                 />
                 <Button

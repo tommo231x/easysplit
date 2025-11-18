@@ -40,7 +40,7 @@ export default function EditMenu() {
       }
       return response.json();
     },
-    enabled: code.length === 6,
+    enabled: code.length >= 6 && code.length <= 8,
     retry: false,
   });
 

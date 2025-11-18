@@ -46,7 +46,7 @@ export default function AdjustSplit() {
     tipPercent: number;
   }>({
     queryKey: [`/api/splits/${code}`],
-    enabled: code.length === 6,
+    enabled: code.length >= 6 && code.length <= 8,
     retry: false,
   });
 
