@@ -219,7 +219,7 @@ export default function AdjustSplit() {
     mutationFn: async () => {
       const totals = calculateTotals();
       
-      const response = await apiRequest("POST", "/api/splits", {
+      const response = await apiRequest("PATCH", `/api/splits/${code}`, {
         name: splitName || undefined,
         menuCode,
         people: people.map((p) => ({ id: p.id, name: p.name })),
@@ -241,17 +241,17 @@ export default function AdjustSplit() {
     },
     onSuccess: (data: { code: string }) => {
       toast({
-        title: "Adjusted split saved!",
-        description: `New split code: ${data.code}`,
+        title: "Split updated!",
+        description: "Everyone with the link will see your changes.",
       });
       
       const savedSplits = JSON.parse(localStorage.getItem("easysplit-my-splits") || "[]");
-      if (!savedSplits.includes(data.code)) {
-        savedSplits.unshift(data.code);
+      if (!savedSplits.includes(code)) {
+        savedSplits.unshift(code);
         localStorage.setItem("easysplit-my-splits", JSON.stringify(savedSplits));
       }
       
-      sessionStorage.setItem("easysplit-split-code", data.code);
+      sessionStorage.setItem("easysplit-split-code", code);
       sessionStorage.setItem("easysplit-results-state", JSON.stringify({
         items,
         people: people.map((p) => ({ id: p.id, name: p.name })),
@@ -262,12 +262,12 @@ export default function AdjustSplit() {
         menuCode,
       }));
       
-      navigate("/results");
+      navigate(`/split/${code}`);
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to save adjusted split",
+        description: "Failed to update split",
         variant: "destructive",
       });
     },
