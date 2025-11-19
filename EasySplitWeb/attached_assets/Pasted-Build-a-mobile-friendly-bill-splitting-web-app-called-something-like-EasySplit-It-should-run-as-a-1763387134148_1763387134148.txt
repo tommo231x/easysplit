@@ -1,0 +1,73 @@
+Build a mobile-friendly bill-splitting web app called something like “EasySplit”. It should run as a normal website but also feel good on a phone (responsive, app-like layout).
+
+The app has two main flows:
+
+Create / Upload Menu – for a restaurant or user to define a menu.
+
+Split a Bill – for a group at a table to pick what they had and see how much each person pays.
+
+Tech
+
+Use Node.js + Express for the backend.
+
+Use SQLite as the database (not Replit DB), with a simple schema for menus and menu_items. Put all DB access in a single helper module so it’s easy to swap to Cloudflare D1 or Postgres later.
+
+Use HTML, CSS and vanilla JavaScript on the frontend. No heavy frameworks.
+
+Make the UI mobile-first and responsive.
+
+Core behaviour
+
+Home page: show two big buttons – “Create / Upload Menu” and “Split a Bill”.
+
+Create / Upload Menu mode:
+
+Let the user paste a simple text menu (one item per line: “Item name, price”).
+
+Parse it into { name, price } items and show them for quick editing.
+
+Allow an optional menu/restaurant name.
+
+Save the menu to SQLite and return a short menu code (e.g. 6 characters) that can be shared.
+
+Provide a link like /menu/<code> and show the code clearly.
+
+Split a Bill mode:
+
+Option A: Enter a menu code and load items from the database.
+
+Option B: Quickly add items manually for a one-off menu.
+
+Allow users to add people by name and list them as chips/tags.
+
+For each menu item, show each person with +/– controls to set how many they had. Store this in memory on the frontend (no need to save orders in the DB).
+
+Calculation
+
+Inputs for currency symbol (default “£”), service charge % (default 12.5) and extra tip % (default 0).
+
+For each person:
+
+Calculate a subtotal (sum of their items).
+
+Add service and tip based on their subtotal (per-person share).
+
+Show a final total per person rounded to 2 decimal places.
+
+Also show the grand total for the whole table. Try to keep rounding consistent so the sum of all people’s totals is as close as possible to the bill total.
+
+Results display
+
+Show a clear list like: person name, subtotal, service, tip, final total.
+
+Add a “Copy breakdown” button that copies a plain-text summary to the clipboard (good for WhatsApp/DMs).
+
+UX & misc
+
+Make the design simple, clean and easy to tap on mobile (bigger buttons, good spacing).
+
+Use labels and sensible colours for accessibility.
+
+Assume only menus are stored in the database; names and bill splits are kept only in the current browser session.
+
+Organise the code cleanly so I can later move the backend and database to another host (like Cloudflare) without rewriting the whole app.
