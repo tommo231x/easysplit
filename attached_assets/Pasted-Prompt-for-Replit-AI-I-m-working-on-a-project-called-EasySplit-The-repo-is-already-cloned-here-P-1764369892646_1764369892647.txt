@@ -1,0 +1,97 @@
+Prompt for Replit AI:
+
+I’m working on a project called EasySplit. The repo is already cloned here. Please help me set up and clean the backend so it can be deployed later as a standalone Node/Express service on Render, while keeping the existing frontend (React/Vite) intact.
+
+Current structure (important):
+
+Root folder has:
+
+server/ → existing Express backend with SQLite (easysplit.db)
+
+client/ → React/Vite frontend
+
+shared/ → shared code/types
+
+easysplit.db → SQLite database file
+
+package.json, package-lock.json, tsconfig.json, vite.config.ts, etc.
+
+Backend requirements:
+
+The backend must live in the existing server/ folder and expose the current API:
+
+POST /api/splits
+
+GET /api/splits/:code
+
+POST /api/menus
+
+GET /api/menus/:code
+These are already implemented – do not delete this logic, just organise and clean it so it’s ready for deployment.
+
+Make sure the main server entry file:
+
+Uses Express
+
+Listens on process.env.PORT || 3000
+
+Logs something like Server running on port ... when it starts.
+If the entry point is not obvious, standardise on server/index.ts (or server/index.js) and make everything consistent.
+
+Add CORS so that later my frontend hosted on Firebase can call this backend on Render. Use:
+
+import cors from "cors";
+
+app.use(cors({ origin: true }));
+(you can keep it permissive for now; I’ll lock it down later).
+
+Add a simple health-check route:
+
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+
+Make sure the SQLite DB still works:
+
+Keep using easysplit.db as the database file.
+
+Ensure the backend can run with just node or ts-node (no weird dev-only tools).
+
+package.json requirements (backend side):
+6. In the root package.json, set up scripts so that the backend can be started with:
+
+"start": "node server/index.js" OR "start": "ts-node server/index.ts"
+(choose whichever matches the current codebase; if it’s TypeScript, configure it properly.)
+
+Make sure all required backend dependencies are in dependencies (not devDependencies): express, cors, better-sqlite3 (or whatever we’re using), etc.
+
+Do not break the frontend build:
+
+The client/ folder must remain a working Vite React app.
+
+Keep existing client scripts like "dev", "build", and "preview" if they exist.
+
+Do not move client files into the server.
+
+Goal:
+
+After your changes, I want to be able to:
+
+Run npm install in the root.
+
+Run npm start in the root.
+
+See the Express server start on process.env.PORT || 3000.
+
+Hit /api/health and existing /api/... routes successfully.
+
+This backend will later be extracted to its own GitHub repo and deployed on Render as a Web Service.
+
+Please:
+
+Show me which files you changed.
+
+Explain briefly how to run the backend only from the root.
+
+Don’t introduce new frameworks or databases; keep using the existing Express + SQLite structure.
