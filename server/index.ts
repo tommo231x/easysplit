@@ -1,8 +1,12 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// Enable CORS for all routes (permissive for now, can be tightened later)
+app.use(cors({ origin: true }));
 
 declare module 'http' {
   interface IncomingMessage {
