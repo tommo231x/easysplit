@@ -1,0 +1,93 @@
+I navigated through the live EasySplit app at https://easysplit.link
+, recreated your exact steps, and reproduced the failure. Here’s what I found:
+
+✅ Actions I performed
+
+Visited the live site and chose “Split a Bill”.
+
+Clicked “Add Manually” and entered a simple menu:
+
+Chicken – £10
+
+Pizza – £8
+
+Added two people (Alice and Bob) and assigned the items:
+
+Alice → 1x Chicken
+
+Bob → 1x Pizza
+
+Set service charge and tip to 0% and clicked “Calculate Split”.
+
+The results screen showed correct totals (£10 for Alice, £8 for Bob, grand total £18).
+
+Clicked “Save & Share”.
+
+🔴 What happened
+
+A red toast appeared: “Save failed – Failed to save split.”
+This means the frontend did reach the backend, but the backend rejected the data. It is not a caching or Firebase‑deploy issue.
+
+📦 What the backend expects
+
+Looking at the code in server/shared/schema.ts and server/routes.ts, the backend validates requests to POST /api/splits with a Zod schema. That schema requires the payload to have:
+
+people: array of objects with id (string) and name (string) – at least 1.
+
+items: array of objects with id (number), optional menuId (number), name (string), and price (number) – at least 1.
+
+quantities: array of objects mapping itemId (number) to personId (string) with quantity (positive integer).
+
+currency: string.
+
+serviceCharge and tipPercent: numbers between 0–100.
+
+totals: array of per‑person totals (subtotal, service, tip, total) – at least 1.
+
+menuCode: optional or null; if present it must match an existing menu code.
+
+If validation fails, the backend responds with HTTP 400 and { error: "Invalid split data", details: [...] }.
+
+📌 Likely cause of the failure
+
+Without access to the exact network payload, the most plausible reasons the backend rejected the request are:
+
+Missing or mismatched IDs: The frontend may be generating numeric IDs for people or items (e.g. 0/1) rather than strings for people or 1‑based IDs for items. The Zod schema expects people[].id to be a string and items[].id to be a positive integer. If the IDs don’t align with those types, validation fails.
+
+Omitted totals: The payload must include a totals array matching each person. If the frontend isn’t sending this array (or it doesn’t match the people IDs), validation fails.
+
+Unexpected menuId: For manually‑added items, menuId is optional. Sending undefined or a non‑numeric value could cause the schema to reject it.
+
+Other minor mismatches: Extra fields or missing fields (e.g. currency not provided, serviceCharge/tipPercent as strings) will cause the schema to fail.
+
+🛠️ Minimal fix
+
+To resolve the “Save split” failure:
+
+Capture the actual request/response from POST /api/splits:
+
+Use the browser’s developer tools (Network tab) to inspect the failed request.
+
+Note the payload the frontend sends and the error details returned (the backend returns a details array explaining which field is wrong).
+
+Match the frontend data to the schema:
+
+Ensure each person has a string id and a non‑empty name.
+
+Ensure each item has a numeric id (starting at 1), optional menuId (or omit it), a non‑empty name, and a positive price.
+
+Ensure quantities references valid itemId and personId.
+
+Include a totals array that matches the computed per‑person totals.
+
+Send serviceCharge and tipPercent as numbers (e.g. 0 instead of "0").
+
+Set menuCode to null if no menu is loaded.
+
+Adjust the frontend or backend as needed:
+
+Frontend: Update the code that constructs the split payload (likely in client/src/pages/results.tsx) so it adheres exactly to the insertBillSplitSchema.
+
+Backend (optional): Loosen the schema slightly (e.g. allow numeric personId or omit totals) only if you decide the backend should be more forgiving. Otherwise, keep the contract strict and fix the frontend.
+
+In short, the split fails because the request payload doesn’t meet the backend’s strict schema, not because of hosting or deployment. Fixing the data shape on the client (or adjusting the schema) will allow splits to be saved successfully.
