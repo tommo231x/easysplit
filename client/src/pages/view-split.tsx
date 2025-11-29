@@ -361,7 +361,7 @@ export default function ViewSplit() {
           <Link href={`/adjust-split/${code}`} className="flex-1">
             <Button variant="default" className="w-full" data-testid="button-adjust-split">
               <Edit className="h-4 w-4 mr-2" />
-              Edit
+              Add Yours
             </Button>
           </Link>
           <Button

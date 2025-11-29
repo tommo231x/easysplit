@@ -354,6 +354,32 @@ export default function AdjustSplit() {
           </p>
         </Card>
 
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={addPerson}
+            className="flex-1"
+            data-testid="button-add-person"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Person
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setNewItemName("");
+              setNewItemPrice("");
+              const card = document.getElementById("add-item-card");
+              card?.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="flex-1"
+            data-testid="button-scroll-add-item"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Item
+          </Button>
+        </div>
+
         {people.map((person, personIndex) => {
           const personTotal = totals.find((t) => t.person.id === person.id);
           
@@ -470,18 +496,8 @@ export default function AdjustSplit() {
           );
         })}
 
-        <Button
-          variant="outline"
-          onClick={addPerson}
-          className="w-full"
-          data-testid="button-add-person"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Person
-        </Button>
-
-        <Card className="p-6">
-          <h3 className="font-semibold mb-4">Add New Item</h3>
+        <Card id="add-item-card" className="p-6">
+          <h3 className="font-semibold mb-2">Add New Item</h3>
           <p className="text-sm text-muted-foreground mb-4">
             Add items that weren't on the original bill (like a side dish someone forgot)
           </p>

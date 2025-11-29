@@ -437,7 +437,7 @@ export default function Results() {
                 data-testid="button-adjust-before-save"
               >
                 <Edit className="h-4 w-4 mr-2" />
-                Adjust Split
+                Make Changes
               </Button>
             </Link>
           </div>
@@ -534,7 +534,7 @@ export default function Results() {
                 data-testid="button-adjust-split"
               >
                 <Edit className="h-4 w-4 mr-2" />
-                Edit
+                Add Yours
               </Button>
               <Button
                 onClick={toggleSplitStatus}
