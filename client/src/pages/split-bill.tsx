@@ -353,27 +353,39 @@ const handleCalculate = () => {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        {/* Step Guide */}
-        <Card className="p-4 bg-muted/50">
-          <div className="flex items-center justify-center gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">1</span>
-              <span className="hidden sm:inline">Add items</span>
-            </div>
-            <div className="w-8 h-px bg-border" />
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">2</span>
-              <span className="hidden sm:inline">Add people</span>
-            </div>
-            <div className="w-8 h-px bg-border" />
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">3</span>
-              <span className="hidden sm:inline">Assign items</span>
-            </div>
-            <div className="w-8 h-px bg-border" />
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-muted-foreground/30 text-muted-foreground flex items-center justify-center text-xs font-medium">4</span>
-              <span className="hidden sm:inline">Calculate</span>
+        {/* Mobile-Friendly Step Guide */}
+        <Card className="p-4 bg-primary/5 border-primary/20">
+          <div className="space-y-3">
+            <h2 className="font-semibold text-center text-lg">How to Split Your Bill</h2>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className={`flex items-start gap-2 p-2 rounded-lg ${items.length > 0 ? 'bg-primary/10' : 'bg-muted/50'}`}>
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${items.length > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/30 text-muted-foreground'}`}>1</span>
+                <div>
+                  <div className="font-medium">Add Items</div>
+                  <div className="text-xs text-muted-foreground">Load menu or add manually</div>
+                </div>
+              </div>
+              <div className={`flex items-start gap-2 p-2 rounded-lg ${people.length > 0 ? 'bg-primary/10' : 'bg-muted/50'}`}>
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${people.length > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/30 text-muted-foreground'}`}>2</span>
+                <div>
+                  <div className="font-medium">Add People</div>
+                  <div className="text-xs text-muted-foreground">Who's splitting?</div>
+                </div>
+              </div>
+              <div className={`flex items-start gap-2 p-2 rounded-lg ${quantities.length > 0 ? 'bg-primary/10' : 'bg-muted/50'}`}>
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${quantities.length > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/30 text-muted-foreground'}`}>3</span>
+                <div>
+                  <div className="font-medium">Assign Items</div>
+                  <div className="text-xs text-muted-foreground">Who had what?</div>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 p-2 rounded-lg bg-muted/50">
+                <span className="w-6 h-6 rounded-full bg-muted-foreground/30 text-muted-foreground flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>
+                <div>
+                  <div className="font-medium">Calculate</div>
+                  <div className="text-xs text-muted-foreground">See who owes what</div>
+                </div>
+              </div>
             </div>
           </div>
         </Card>
@@ -434,27 +446,32 @@ const handleCalculate = () => {
 
           <TabsContent value="manual" className="space-y-4 mt-4">
             <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-2">
                 <h3 className="font-medium">Manual Items</h3>
-                <Button
-                  onClick={addManualItem}
-                  variant="outline"
-                  size="sm"
-                  data-testid="button-add-manual-item"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Item
-                </Button>
               </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Add each item from the bill with its price
+              </p>
 
               {manualItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  No items yet. Click "Add Item" to start.
-                </p>
+                <div className="text-center py-6">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    No items yet. Tap the button below to add your first item.
+                  </p>
+                  <Button
+                    onClick={addManualItem}
+                    className="h-12 px-6"
+                    data-testid="button-add-manual-item"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    Add First Item
+                  </Button>
+                </div>
               ) : (
-                <div className="space-y-2">
-                  {manualItems.map((item) => (
-                    <div key={item.id} className="flex gap-2">
+                <div className="space-y-3">
+                  {manualItems.map((item, index) => (
+                    <div key={item.id} className="flex gap-2 items-center">
+                      <span className="text-sm text-muted-foreground w-6 text-center flex-shrink-0">{index + 1}</span>
                       <Input
                         placeholder="Item name"
                         value={item.name}
@@ -462,21 +479,25 @@ const handleCalculate = () => {
                         className="h-12 flex-1"
                         data-testid={`input-manual-item-name-${item.id}`}
                       />
-                      <Input
-                        type="number"
-                        placeholder="0.00"
-                        value={item.price || ""}
-                        onChange={(e) =>
-                          updateManualItem(item.id, "price", parseFloat(e.target.value) || 0)
-                        }
-                        className="h-12 w-24"
-                        step="0.01"
-                        min="0"
-                        data-testid={`input-manual-item-price-${item.id}`}
-                      />
+                      <div className="flex items-center gap-1 w-28 flex-shrink-0">
+                        <span className="text-muted-foreground">{currency}</span>
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          value={item.price || ""}
+                          onChange={(e) =>
+                            updateManualItem(item.id, "price", parseFloat(e.target.value) || 0)
+                          }
+                          className="h-12"
+                          step="0.01"
+                          min="0"
+                          data-testid={`input-manual-item-price-${item.id}`}
+                        />
+                      </div>
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="h-12 w-12 flex-shrink-0"
                         onClick={() => removeManualItem(item.id)}
                         data-testid={`button-remove-manual-item-${item.id}`}
                       >
@@ -484,6 +505,15 @@ const handleCalculate = () => {
                       </Button>
                     </div>
                   ))}
+                  <Button
+                    onClick={addManualItem}
+                    variant="outline"
+                    className="w-full h-12 mt-2"
+                    data-testid="button-add-another-item"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    Add Another Item
+                  </Button>
                 </div>
               )}
             </Card>
@@ -569,99 +599,119 @@ const handleCalculate = () => {
         )}
 
         <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-2">
             <Users className="h-5 w-5" />
-            <h3 className="font-medium">People</h3>
+            <h3 className="font-medium">Step 2: Add People</h3>
           </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Add everyone who's splitting the bill
+          </p>
 
           <div className="flex gap-2 mb-4">
             <Input
-              placeholder="Add person's name"
+              placeholder="Enter name and tap Add"
               value={newPersonName}
               onChange={(e) => setNewPersonName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addPerson()}
               className="h-12 flex-1"
               data-testid="input-person-name"
             />
-            <Button onClick={addPerson} className="h-12" data-testid="button-add-person">
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={addPerson} className="h-12 px-6" data-testid="button-add-person">
+              <Plus className="h-5 w-5 mr-2" />
               Add
             </Button>
           </div>
 
-          {people.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {people.map((person) => (
-                <Badge
-                  key={person.id}
-                  variant="secondary"
-                  className="px-4 py-2 text-base rounded-full"
-                  data-testid={`badge-person-${person.id}`}
-                >
-                  {person.name}
-                  <button
-                    onClick={() => removePerson(person.id)}
-                    className="ml-2 hover:opacity-70"
-                    data-testid={`button-remove-person-${person.id}`}
+          {people.length === 0 ? (
+            <div className="text-center py-4 text-sm text-muted-foreground bg-muted/50 rounded-lg">
+              No people added yet. Enter a name above and tap "Add"
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">{people.length} {people.length === 1 ? 'person' : 'people'} added:</p>
+              <div className="flex flex-wrap gap-2">
+                {people.map((person) => (
+                  <Badge
+                    key={person.id}
+                    variant="secondary"
+                    className="pl-4 pr-1 py-1 text-base rounded-full flex items-center gap-1"
+                    data-testid={`badge-person-${person.id}`}
                   >
-                    <X className="h-4 w-4" />
-                  </button>
-                </Badge>
-              ))}
+                    {person.name}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full ml-1"
+                      onClick={() => removePerson(person.id)}
+                      data-testid={`button-remove-person-${person.id}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
             </div>
           )}
         </Card>
 
         {items.length > 0 && people.length > 0 && (
           <Card className="p-6">
-            <h3 className="font-medium mb-4">Who had what?</h3>
+            <div className="mb-2">
+              <h3 className="font-medium">Step 3: Assign Items</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Tap + or - to set how many of each item each person had
+            </p>
             <div className="space-y-4">
               {items.map((item) => (
                 <div key={item.id} className="border-b last:border-0 pb-4 last:pb-0">
-                  <div className="flex justify-between items-start mb-3">
+                  <div className="flex justify-between items-start mb-3 bg-muted/30 p-3 rounded-lg">
                     <div>
-                      <div className="font-medium">{item.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {currency}
-                        {item.price.toFixed(2)}
+                      <div className="font-medium text-base">{item.name}</div>
+                      <div className="text-sm font-semibold text-primary">
+                        {currency}{item.price.toFixed(2)}
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {people.map((person) => (
-                      <div
-                        key={person.id}
-                        className="flex items-center justify-between bg-muted/50 rounded-lg p-2 gap-2"
-                      >
-                        <span className="text-sm flex-1 min-w-0">{person.name}</span>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-10 w-10"
-                            onClick={() => updateQuantity(item.id, person.id, -1)}
-                            data-testid={`button-decrease-${item.id}-${person.id}`}
-                          >
-                            -
-                          </Button>
-                          <span
-                            className="w-8 text-center font-mono font-medium"
-                            data-testid={`text-quantity-${item.id}-${person.id}`}
-                          >
-                            {getQuantity(item.id, person.id) || "-"}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-10 w-10"
-                            onClick={() => updateQuantity(item.id, person.id, 1)}
-                            data-testid={`button-increase-${item.id}-${person.id}`}
-                          >
-                            +
-                          </Button>
+                  <div className="space-y-2">
+                    {people.map((person) => {
+                      const qty = getQuantity(item.id, person.id);
+                      return (
+                        <div
+                          key={person.id}
+                          className={`flex items-center justify-between rounded-lg p-3 gap-3 ${qty > 0 ? 'bg-primary/10 border border-primary/20' : 'bg-muted/50'}`}
+                        >
+                          <span className="text-sm font-medium flex-1 min-w-0">{person.name}</span>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-11 w-11 text-lg font-bold"
+                              onClick={() => updateQuantity(item.id, person.id, -1)}
+                              disabled={qty === 0}
+                              data-testid={`button-decrease-${item.id}-${person.id}`}
+                            >
+                              -
+                            </Button>
+                            <span
+                              className={`w-10 text-center font-mono font-bold text-lg ${qty > 0 ? 'text-primary' : 'text-muted-foreground'}`}
+                              data-testid={`text-quantity-${item.id}-${person.id}`}
+                            >
+                              {qty || "0"}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-11 w-11 text-lg font-bold"
+                              onClick={() => updateQuantity(item.id, person.id, 1)}
+                              data-testid={`button-increase-${item.id}-${person.id}`}
+                            >
+                              +
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}
