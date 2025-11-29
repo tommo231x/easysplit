@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { db } from "./db";
 import { z } from "zod";
@@ -23,7 +23,7 @@ const insertMenuSchema = z.object({
 // Default to enabled for development, can be disabled via environment variable
 const ENABLE_DEBUG_LOGS = process.env.ENABLE_DEBUG_LOGS !== "false";
 
-function debugLog(message: string, data?: any) {
+function debugLog(message: string, data?: any): void {
   if (ENABLE_DEBUG_LOGS) {
     if (data !== undefined) {
       console.log(message, typeof data === "object" ? JSON.stringify(data, null, 2) : data);
@@ -45,11 +45,11 @@ const codeRetrievalLimiter = rateLimit({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint
-  app.get("/api/health", (req, res) => {
+  app.get("/api/health", (req: Request, res: Response): void => {
     res.json({ status: "ok" });
   });
 
-  app.post("/api/menus", async (req, res) => {
+  app.post("/api/menus", async (req: Request, res: Response): Promise<void> => {
     try {
       const validated = insertMenuSchema.parse(req.body);
       const result = db.createMenu(validated);
@@ -58,7 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         code: result.code,
         menu: result.menu,
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: "Validation error", details: error.errors });
       } else {
@@ -68,7 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/menus/:code", codeRetrievalLimiter, async (req, res) => {
+  app.get("/api/menus/:code", codeRetrievalLimiter, async (req: Request, res: Response): Promise<void> => {
     try {
       const code = req.params.code.toUpperCase();
       
@@ -85,13 +85,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching menu:", error);
       res.status(500).json({ error: "Failed to fetch menu" });
     }
   });
 
-  app.patch("/api/menus/:code", async (req, res) => {
+  app.patch("/api/menus/:code", async (req: Request, res: Response): Promise<void> => {
     try {
       const code = req.params.code.toUpperCase();
       
@@ -109,7 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: "Validation error", details: error.errors });
       } else {
@@ -119,7 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/menus/:code", async (req, res) => {
+  app.delete("/api/menus/:code", async (req: Request, res: Response): Promise<void> => {
     try {
       const code = req.params.code.toUpperCase();
       
@@ -136,13 +136,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting menu:", error);
       res.status(500).json({ error: "Failed to delete menu" });
     }
   });
 
-  app.post("/api/splits", async (req, res) => {
+  app.post("/api/splits", async (req: Request, res: Response): Promise<void> => {
     try {
       debugLog("[POST /api/splits] Request body:", req.body);
       const validationResult = insertBillSplitSchema.safeParse(req.body);
@@ -180,13 +180,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         code: result.code,
         split: result.split,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating split:", error);
       res.status(500).json({ error: "Failed to create split" });
     }
   });
 
-  app.get("/api/splits/:code", codeRetrievalLimiter, async (req, res) => {
+  app.get("/api/splits/:code", codeRetrievalLimiter, async (req: Request, res: Response): Promise<void> => {
     try {
       const code = req.params.code.toUpperCase();
       
@@ -215,13 +215,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totals: JSON.parse(split.totals),
         createdAt: split.createdAt,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching split:", error);
       res.status(500).json({ error: "Failed to fetch split" });
     }
   });
 
-  app.patch("/api/splits/:code", async (req, res) => {
+  app.patch("/api/splits/:code", async (req: Request, res: Response): Promise<void> => {
     try {
       const code = req.params.code.toUpperCase();
       
@@ -271,13 +271,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         code: result.code,
         split: result.split,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating split:", error);
       res.status(500).json({ error: "Failed to update split" });
     }
   });
 
-  app.get("/api/menus/:code/splits", async (req, res) => {
+  app.get("/api/menus/:code/splits", async (req: Request, res: Response): Promise<void> => {
     try {
       const code = req.params.code.toUpperCase();
       
@@ -287,23 +287,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const splits = db.getSplitsByMenuCode(code);
-      
-      res.json(splits.map(split => ({
-        code: split.code,
-        name: split.name,
-        menuCode: split.menuCode,
-        people: JSON.parse(split.people),
-        totals: JSON.parse(split.totals),
-        currency: split.currency,
-        createdAt: split.createdAt,
-      })));
-    } catch (error) {
-      console.error("Error fetching splits:", error);
+      res.json(splits);
+    } catch (error: any) {
+      console.error("Error fetching splits for menu:", error);
       res.status(500).json({ error: "Failed to fetch splits" });
     }
   });
 
-  const httpServer = createServer(app);
-
-  return httpServer;
+  const server = createServer(app);
+  return server;
 }
