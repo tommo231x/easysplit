@@ -1,0 +1,171 @@
+You are working on the EasySplit web app (https://easysplit.link
+).
+
+Your job now is to:
+
+Fix UX / logic issues found in the latest 6-person stress test.
+
+Make the experience equally solid on mobile (small screens / touch).
+
+Do NOT break existing working flows.
+
+Do not just refactor for style. Every change must be tied to a concrete UX / logic issue below.
+
+✅ Things that already work (do NOT regress)
+
+Keep these behaviours intact:
+
+Homepage loads fast and clean with clear actions (“Create / Upload Menu”, “Split a Bill”, “My Splits”).
+
+Creating a new split with Add Manually works for many items + people.
+
+Assigning items with the + / - controls works, even with rapid clicks.
+
+“Calculate Split” produces correct subtotals + service (12.5%) + grand total.
+
+“Save Split” creates a working share link; opening it loads the split correctly.
+
+From the share link, “Add Yours” lets a new person join and edit their items.
+
+Multiple new people (e.g. Liam, Mona, Noah) can join and:
+
+Add/change quantities
+
+Correct mistakes (typos, wrong quantity)
+
+Save and have their totals reflected in the main view
+
+Toasts like “Split saved!”, “Split updated!” appear at the right times.
+
+With 6 people, final view shows everyone with correct totals and a correct grand total.
+
+Preserve these flows and retest them after making changes.
+
+⚠️ Issues to fix (Desktop and Mobile)
+1. Grand Total / cards sometimes show stale values after save
+
+After saving edits in Edit Contributions, the grand total on the main Bill Split view sometimes still shows the old value until the user scrolls.
+
+Same with some cards briefly showing old totals.
+
+Required changes:
+
+Fix the state / re-render logic so that all totals update immediately after a successful save, without relying on scroll.
+
+Ensure this works on desktop and mobile (small screens, touch scroll).
+
+2. “Calculate Split” easy to mis-tap at bottom of long list
+
+On the Assign Items step, with many rows, the “Calculate Split” button sits directly under the scrollable list.
+
+On desktop it’s easy to mis-click; on mobile it will be even easier to mis-tap while scrolling.
+
+Required changes:
+
+Make it harder to accidentally trigger:
+
+Either convert it into a sticky/floating bottom button that stays clearly separated from the scroll area,
+
+Or add extra spacing / safe area so a scroll flick doesn’t hit the button.
+
+Verify this is comfortable on mobile viewport (e.g. 375×812) with touch behaviour.
+
+3. Edit Contributions is tiring with many people (especially on mobile)
+
+In Edit Contributions, each person’s card is tall; the Save button is far at the bottom.
+
+With 6 people, you have to scroll a lot to review and then scroll all the way down to save.
+
+On mobile this will feel even more painful.
+
+Required changes:
+
+Add a sticky Save bar at the bottom of the viewport (desktop + mobile), or
+
+Provide a Save button that is always visible (e.g. fixed bottom action bar).
+
+Make sure it’s clear when changes are saving and when they’re done (Saving... → enabled).
+
+Confirm it feels okay on mobile: big enough tap target, not overlapping inputs when keyboard is open.
+
+4. “Add Yours” vs “Edit Contributions” text & flow
+
+On the shared page, the wording can be confusing:
+
+“Add Yours” doubles as the entry point to full edit mode.
+
+After you’re already in the split, it becomes “Edit Contributions”, but the difference isn’t obvious.
+
+Required changes:
+
+Make the copy clearer and more intuitive. For example:
+
+When not in the split yet: “Add Yourself to This Split”
+
+When already in: “Edit Your Share” or “Edit Split”
+
+Ensure the logic for when each label appears is correct and consistent.
+
+Re-check on mobile: text should fit and be clearly tappable.
+
+5. Mobile behaviour & layout audit (critical)
+
+Most users will be on phones in a restaurant. You must test and adjust:
+
+On a narrow mobile viewport (e.g. Chrome devtools 375×812 / 390×844):
+
+Homepage:
+
+Buttons readable and not cramped.
+
+Create Split / Add Manually:
+
+Items and price fields easy to tap.
+
+“Add Item” button visible without weird overlaps.
+
+People & Assign Items:
+
+Names and + / - buttons big enough for thumbs.
+
+Long lists scroll smoothly without accidental button taps.
+
+Results & Share:
+
+Person cards readable; totals easy to spot.
+
+Shareable link + buttons (“Copy link”, “Share”) reachable and not tiny.
+
+Edit Contributions:
+
+Input fields not hidden under keyboard.
+
+Sticky Save bar behaves well when keyboard opens/closes.
+
+If you need to tweak spacing/stacking for small screens (responsive CSS, flex/column layouts, media queries), do so.
+
+🔧 How to work
+
+Identify relevant files/components (e.g. split creation flow, assignment screen, results screen, edit contributions page, shared view).
+
+Implement minimal, focused changes that address the issues above.
+
+Use the dev server in desktop and mobile views to verify:
+
+Fresh split creation with 3 people.
+
+Added 3 more via share link.
+
+Edits with mistakes + corrections.
+
+Totals & grand total always correct and up to date.
+
+After changes, write a short summary in comments or notes:
+
+What you changed
+
+Where
+
+Which issue(s) it fixes
+
+Do not remove or drastically redesign working flows. Improve them just enough to be robust and intuitive on both desktop and mobile.
