@@ -1,5 +1,5 @@
 import { useRoute, Link } from "wouter";
-import { ArrowLeft, Copy, Check, Edit, Link as LinkIcon, Share2, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, Copy, Check, UserPlus, Link as LinkIcon, Share2, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -360,7 +360,7 @@ export default function ViewSplit() {
           </Button>
           <Link href={`/adjust-split/${code}`} className="flex-1">
             <Button variant="default" className="w-full" data-testid="button-adjust-split">
-              <Edit className="h-4 w-4 mr-2" />
+              <UserPlus className="h-4 w-4 mr-2" />
               Add Yours
             </Button>
           </Link>

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, Copy, Check, Share2, Edit, Link as LinkIcon, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, Copy, Check, Share2, Edit, UserPlus, Link as LinkIcon, CheckCircle2, XCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -533,7 +533,7 @@ export default function Results() {
                 className="flex-1"
                 data-testid="button-adjust-split"
               >
-                <Edit className="h-4 w-4 mr-2" />
+                <UserPlus className="h-4 w-4 mr-2" />
                 Add Yours
               </Button>
               <Button

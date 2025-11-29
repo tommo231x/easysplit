@@ -358,8 +358,8 @@ export default function AdjustSplit() {
           <Button
             variant="outline"
             onClick={addPerson}
-            className="flex-1"
-            data-testid="button-add-person"
+            className="flex-1 min-h-12"
+            data-testid="button-add-person-top"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Person
@@ -367,12 +367,13 @@ export default function AdjustSplit() {
           <Button
             variant="outline"
             onClick={() => {
-              setNewItemName("");
-              setNewItemPrice("");
-              const card = document.getElementById("add-item-card");
-              card?.scrollIntoView({ behavior: "smooth" });
+              const input = document.getElementById("new-item-name");
+              if (input) {
+                input.scrollIntoView({ behavior: "smooth", block: "center" });
+                setTimeout(() => input.focus(), 300);
+              }
             }}
-            className="flex-1"
+            className="flex-1 min-h-12"
             data-testid="button-scroll-add-item"
           >
             <Plus className="h-4 w-4 mr-2" />
