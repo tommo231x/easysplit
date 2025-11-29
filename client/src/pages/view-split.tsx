@@ -392,8 +392,8 @@ export default function ViewSplit() {
       <div className="min-h-screen bg-background">
         <header className="sticky top-0 z-10 bg-background border-b h-16 flex items-center px-4 gap-2">
           <Link href="/">
-            <Button variant="ghost" size="icon" data-testid="button-back">
-              <ArrowLeft className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="h-11 w-11" data-testid="button-back">
+              <ArrowLeft className="h-6 w-6" />
             </Button>
           </Link>
           <h1 className="text-xl font-semibold">Loading...</h1>
@@ -407,8 +407,8 @@ export default function ViewSplit() {
       <div className="min-h-screen bg-background">
         <header className="sticky top-0 z-10 bg-background border-b h-16 flex items-center px-4 gap-2">
           <Link href="/">
-            <Button variant="ghost" size="icon" data-testid="button-back">
-              <ArrowLeft className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="h-11 w-11" data-testid="button-back">
+              <ArrowLeft className="h-6 w-6" />
             </Button>
           </Link>
           <h1 className="text-xl font-semibold">Split Not Found</h1>
@@ -423,8 +423,8 @@ export default function ViewSplit() {
     <div className="min-h-screen bg-background pb-32">
       <header className="sticky top-0 z-10 bg-background border-b h-16 flex items-center px-4 gap-2">
         <Link href="/">
-          <Button variant="ghost" size="icon" data-testid="button-back">
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="icon" className="h-11 w-11" data-testid="button-back">
+            <ArrowLeft className="h-6 w-6" />
           </Button>
         </Link>
         <h1 className="text-xl font-semibold flex-1">Bill Split</h1>

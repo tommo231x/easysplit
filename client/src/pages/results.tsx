@@ -337,8 +337,8 @@ export default function Results() {
     <div className="min-h-screen bg-background pb-24">
       <header className="sticky top-0 z-10 bg-background border-b h-16 flex items-center px-4 gap-2">
         <Link href="/split-bill">
-          <Button variant="ghost" size="icon" data-testid="button-back">
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="icon" className="h-11 w-11" data-testid="button-back">
+            <ArrowLeft className="h-6 w-6" />
           </Button>
         </Link>
         <h1 className="text-xl font-semibold">Results</h1>

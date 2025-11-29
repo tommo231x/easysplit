@@ -367,8 +367,8 @@ export default function AdjustSplit() {
       <div className="min-h-screen bg-background">
         <header className="sticky top-0 z-10 bg-background border-b h-16 flex items-center px-4 gap-2">
           <Link href={`/split/${code}`}>
-            <Button variant="ghost" size="icon" data-testid="button-back">
-              <ArrowLeft className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="h-11 w-11" data-testid="button-back">
+              <ArrowLeft className="h-6 w-6" />
             </Button>
           </Link>
           <h1 className="text-xl font-semibold">Loading...</h1>
@@ -382,8 +382,8 @@ export default function AdjustSplit() {
       <div className="min-h-screen bg-background">
         <header className="sticky top-0 z-10 bg-background border-b h-16 flex items-center px-4 gap-2">
           <Link href="/">
-            <Button variant="ghost" size="icon" data-testid="button-back">
-              <ArrowLeft className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="h-11 w-11" data-testid="button-back">
+              <ArrowLeft className="h-6 w-6" />
             </Button>
           </Link>
           <h1 className="text-xl font-semibold">Split Not Found</h1>
@@ -399,8 +399,8 @@ export default function AdjustSplit() {
     <div className="min-h-screen bg-background pb-32">
       <header className="sticky top-0 z-10 bg-background border-b h-16 flex items-center px-4 gap-2">
         <Link href={`/split/${code}`}>
-          <Button variant="ghost" size="icon" data-testid="button-back">
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="icon" className="h-11 w-11" data-testid="button-back">
+            <ArrowLeft className="h-6 w-6" />
           </Button>
         </Link>
         <h1 className="text-xl font-semibold">Edit Contributions</h1>
@@ -436,17 +436,17 @@ export default function AdjustSplit() {
           <Card className="p-4">
             <button
               onClick={() => setShowAddItem(!showAddItem)}
-              className="w-full flex items-center justify-between text-left"
+              className="w-full min-h-11 flex items-center justify-between text-left py-2"
               data-testid="button-toggle-add-item"
             >
               <div className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                <span className="font-medium">Add Item</span>
+                <Plus className="h-5 w-5" />
+                <span className="font-medium">Add Item to Bill</span>
               </div>
               {showAddItem ? (
-                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                <ChevronUp className="h-5 w-5 text-muted-foreground" />
               ) : (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
               )}
             </button>
             
