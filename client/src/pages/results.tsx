@@ -139,10 +139,12 @@ export default function Results() {
         description: "Your bill split has been saved and can be shared",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error("[Save Split Error]", error.message);
+      console.error("[Save Split Error Full]", error);
       toast({
         title: "Save failed",
-        description: "Failed to save split",
+        description: error.message || "Failed to save split",
         variant: "destructive",
       });
     },
@@ -199,7 +201,7 @@ export default function Results() {
   const grandTotal = totals.reduce((sum, t) => sum + t.total, 0);
 
   const handleSaveSplit = () => {
-    saveSplitMutation.mutate({
+    const payload = {
       name: splitName.trim() || undefined,
       menuCode,
       people,
@@ -209,7 +211,9 @@ export default function Results() {
       serviceCharge,
       tipPercent,
       totals,
-    });
+    };
+    console.log("[Save Split Payload]", JSON.stringify(payload, null, 2));
+    saveSplitMutation.mutate(payload);
   };
 
   const toggleSplitStatus = () => {

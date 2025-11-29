@@ -4,8 +4,11 @@ import { registerRoutes } from "./routes.js";
 
 const app = express();
 
-// Enable CORS for all routes (permissive for now, can be tightened later)
-app.use(cors({ origin: true }));
+// Enable CORS for all routes with credentials support
+app.use(cors({ 
+  origin: true,
+  credentials: true 
+}));
 
 // Render health check endpoint
 app.get("/healthz", (_req, res) => {
