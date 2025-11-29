@@ -4,6 +4,10 @@ import { registerRoutes } from "./routes.js";
 
 const app = express();
 
+// Trust the first proxy (Render, Heroku, etc.) for proper IP detection
+// This fixes express-rate-limit's X-Forwarded-For validation error
+app.set('trust proxy', 1);
+
 // Enable CORS for all routes with credentials support
 app.use(cors({ 
   origin: true,
@@ -43,6 +47,17 @@ app.use((req: Request, res: Response, next: NextFunction): void => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
+      // Skip verbose logging for expected 404s (stale split/menu links)
+      // These are normal after deploys when clients have old share links open
+      const isExpected404 = res.statusCode === 404 && 
+        (path.match(/^\/api\/splits\/[A-Z0-9]+$/i) || path.match(/^\/api\/menus\/[A-Z0-9]+$/i));
+      
+      if (isExpected404) {
+        // Log minimally for expected 404s (no response body to reduce noise)
+        console.log(`[express] ${req.method} ${path} 404 in ${duration}ms`);
+        return;
+      }
+
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
