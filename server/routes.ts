@@ -287,7 +287,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const splits = db.getSplitsByMenuCode(code);
-      res.json(splits);
+      
+      // Parse JSON strings for frontend consumption
+      const parsedSplits = splits.map((split) => ({
+        code: split.code,
+        name: split.name,
+        menuCode: split.menuCode,
+        people: JSON.parse(split.people),
+        items: JSON.parse(split.items),
+        quantities: JSON.parse(split.quantities),
+        currency: split.currency,
+        serviceCharge: split.serviceCharge,
+        tipPercent: split.tipPercent,
+        totals: JSON.parse(split.totals),
+        createdAt: split.createdAt,
+      }));
+      
+      res.json(parsedSplits);
     } catch (error: any) {
       console.error("Error fetching splits for menu:", error);
       res.status(500).json({ error: "Failed to fetch splits" });

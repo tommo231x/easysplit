@@ -448,21 +448,46 @@ Get all bill splits associated with a menu.
 ```json
 [
   {
-    "id": 1,
     "code": "XYZ78901",
     "name": "Friday Dinner Split",
     "menuCode": "ABC12345",
-    "people": "[{\"id\":\"p1\",\"name\":\"Alice\"}]",
-    "items": "[...]",
-    "quantities": "[...]",
     "currency": "£",
     "serviceCharge": 12.5,
     "tipPercent": 10,
-    "totals": "[...]",
-    "createdAt": "2025-11-29 12:30:00"
+    "createdAt": "2025-11-29 12:30:00",
+    "people": [
+      { "id": "p1", "name": "Alice" },
+      { "id": "p2", "name": "Bob" }
+    ],
+    "items": [
+      { "id": 1, "menuId": 1, "name": "Margherita Pizza", "price": 12.50 },
+      { "id": 2, "menuId": 1, "name": "Caesar Salad", "price": 8.00 }
+    ],
+    "quantities": [
+      { "itemId": 1, "personId": "p1", "quantity": 1 },
+      { "itemId": 2, "personId": "p2", "quantity": 1 }
+    ],
+    "totals": [
+      {
+        "person": { "id": "p1", "name": "Alice" },
+        "subtotal": 12.50,
+        "service": 1.56,
+        "tip": 1.25,
+        "total": 15.31
+      },
+      {
+        "person": { "id": "p2", "name": "Bob" },
+        "subtotal": 8.00,
+        "service": 1.00,
+        "tip": 0.80,
+        "total": 9.80
+      }
+    ]
   }
 ]
 ```
+
+**Note:** Returns an empty array `[]` if no splits exist for the menu.
 
 **Error Responses:**
 
