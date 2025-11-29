@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { getApiUrl } from "@/lib/api";
 import type { InsertMenuItem } from "@shared/schema";
 import CurrencySelector from "@/components/currency-selector";
 import {
@@ -34,7 +35,7 @@ export default function EditMenu() {
   const { data, isLoading } = useQuery<{ menu: { name: string | null; currency: string }; items: Array<{ name: string; price: number }> }>({
     queryKey: ["/api/menus", code],
     queryFn: async () => {
-      const response = await fetch(`/api/menus/${code}`);
+      const response = await fetch(getApiUrl(`/api/menus/${code}`));
       if (!response.ok) {
         throw new Error("Menu not found");
       }

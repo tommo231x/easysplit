@@ -26,6 +26,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
+import { getApiUrl } from "@/lib/api";
 import type { MenuItem, Person, ItemQuantity } from "@shared/schema";
 import { nanoid } from "nanoid";
 import CurrencySelector from "@/components/currency-selector";
@@ -75,7 +76,7 @@ export default function SplitBill() {
   const { refetch: loadMenu, isFetching } = useQuery({
     queryKey: ["/api/menus", menuCode],
     queryFn: async () => {
-      const response = await fetch(`/api/menus/${menuCode}`);
+      const response = await fetch(getApiUrl(`/api/menus/${menuCode}`));
       if (!response.ok) {
         throw new Error("Menu not found");
       }
@@ -105,7 +106,7 @@ export default function SplitBill() {
   }>>({
     queryKey: ['/api/menus', menuCode, 'splits'],
     queryFn: async () => {
-      const response = await fetch(`/api/menus/${menuCode}/splits`);
+      const response = await fetch(getApiUrl(`/api/menus/${menuCode}/splits`));
       if (!response.ok) {
         throw new Error('Failed to fetch split history');
       }

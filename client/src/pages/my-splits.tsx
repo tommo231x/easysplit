@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
+import { getApiUrl } from "@/lib/api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,7 +71,7 @@ export default function MySplits() {
       const results = await Promise.all(
         savedSplitCodes.map(async (code: string) => {
           try {
-            const response = await fetch(`/api/splits/${code}`);
+            const response = await fetch(getApiUrl(`/api/splits/${code}`));
             if (!response.ok) return null;
             return await response.json();
           } catch {
