@@ -1,10 +1,11 @@
 import { useRoute, Link, useLocation } from "wouter";
-import { ArrowLeft, Copy, Check, UserPlus, Link as LinkIcon, Share2, CheckCircle2, XCircle, Edit } from "lucide-react";
+import { ArrowLeft, Copy, Check, UserPlus, Link as LinkIcon, Share2, CheckCircle2, XCircle, Edit, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
 import { setSplitStatus, getSplitStatus } from "@/lib/split-status";
@@ -18,6 +19,9 @@ export default function ViewSplit() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [splitStatus, setSplitStatusState] = useState<"open" | "closed">("open");
   const [userName, setUserName] = useState("");
+  const [isEditingCharges, setIsEditingCharges] = useState(false);
+  const [editServiceCharge, setEditServiceCharge] = useState(0);
+  const [editTipPercent, setEditTipPercent] = useState(0);
   const previousTotalsRef = useRef<Array<{ person: { id: string; name: string }; total: number }> | null>(null);
   
   // Load saved user name from localStorage
@@ -244,6 +248,145 @@ export default function ViewSplit() {
     });
   };
 
+  // Start editing service charge and tip
+  const startEditingCharges = () => {
+    if (data) {
+      setEditServiceCharge(data.serviceCharge);
+      setEditTipPercent(data.tipPercent);
+      setIsEditingCharges(true);
+    }
+  };
+
+  // Mutation to update service charge and tip
+  const updateChargesMutation = useMutation({
+    mutationFn: async ({ serviceCharge, tipPercent }: { serviceCharge: number; tipPercent: number }) => {
+      if (!data) throw new Error("No data");
+      
+      // Get extra contributions from existing totals
+      const extraContributions = new Map<string, number>();
+      data.totals.forEach((t) => {
+        if ((t.extraContribution ?? 0) > 0) {
+          extraContributions.set(t.person.id, t.extraContribution ?? 0);
+        }
+      });
+      
+      // Calculate base totals first
+      const baseTotals = data.people.map((person) => {
+        const personQuantities = data.quantities.filter((q) => q.personId === person.id);
+        const subtotal = personQuantities.reduce((sum, q) => {
+          const item = data.items.find((i) => i.id === q.itemId);
+          return sum + (item ? item.price * q.quantity : 0);
+        }, 0);
+        const service = (subtotal * serviceCharge) / 100;
+        const tip = (subtotal * tipPercent) / 100;
+        const baseTotal = subtotal + service + tip;
+        const extraContribution = extraContributions.get(person.id) || 0;
+        
+        return {
+          person,
+          subtotal: Math.round(subtotal * 100) / 100,
+          service: Math.round(service * 100) / 100,
+          tip: Math.round(tip * 100) / 100,
+          baseTotal: Math.round(baseTotal * 100) / 100,
+          extraContribution,
+        };
+      });
+      
+      // Apply redistribution algorithm for extra contributions
+      const totalExtraContributions = baseTotals.reduce((sum, t) => sum + t.extraContribution, 0);
+      const reductions = new Map<string, number>();
+      baseTotals.forEach((t) => reductions.set(t.person.id, 0));
+      
+      let remaining = totalExtraContributions;
+      let activeRecipients = baseTotals.filter((t) => t.extraContribution === 0);
+      
+      while (remaining > 0 && activeRecipients.length > 0) {
+        const sharePerRecipient = remaining / activeRecipients.length;
+        let redistributionNeeded = false;
+        
+        activeRecipients.forEach((recipient) => {
+          const currentReduction = reductions.get(recipient.person.id) || 0;
+          const remainingOwed = recipient.baseTotal - currentReduction;
+          const actualReduction = Math.min(sharePerRecipient, remainingOwed);
+          
+          reductions.set(recipient.person.id, currentReduction + actualReduction);
+          remaining -= actualReduction;
+          
+          if (actualReduction < sharePerRecipient) {
+            redistributionNeeded = true;
+          }
+        });
+        
+        if (redistributionNeeded) {
+          activeRecipients = activeRecipients.filter((recipient) => {
+            const currentReduction = reductions.get(recipient.person.id) || 0;
+            return currentReduction < recipient.baseTotal;
+          });
+        } else {
+          break;
+        }
+      }
+      
+      // Calculate final totals
+      const newTotals = baseTotals.map((t) => {
+        let adjustedTotal = t.baseTotal;
+        
+        if (t.extraContribution > 0) {
+          adjustedTotal += t.extraContribution;
+        } else {
+          const reduction = reductions.get(t.person.id) || 0;
+          adjustedTotal -= reduction;
+        }
+        
+        return {
+          person: t.person,
+          subtotal: t.subtotal,
+          service: t.service,
+          tip: t.tip,
+          total: Math.max(0, Math.round(adjustedTotal * 100) / 100),
+          extraContribution: t.extraContribution,
+          baseTotal: t.baseTotal,
+        };
+      });
+
+      const response = await apiRequest("PATCH", `/api/splits/${code}`, {
+        name: data.name,
+        menuCode: data.menuCode,
+        people: data.people,
+        items: data.items,
+        quantities: data.quantities,
+        currency: data.currency,
+        serviceCharge,
+        tipPercent,
+        totals: newTotals,
+      });
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/splits/${code}`] });
+      setIsEditingCharges(false);
+      toast({
+        title: "Charges updated!",
+        description: "Service charge and tip have been updated.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Update failed",
+        description: "Failed to update charges. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSaveCharges = () => {
+    updateChargesMutation.mutate({
+      serviceCharge: editServiceCharge,
+      tipPercent: editTipPercent,
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -347,25 +490,92 @@ export default function ViewSplit() {
         </Card>
         
         <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Split Details</h2>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Split Code:</span>
-              <span className="font-mono font-semibold">{data.code}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Service Charge:</span>
-              <span>{data.serviceCharge}%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Tip:</span>
-              <span>{data.tipPercent}%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Created:</span>
-              <span>{new Date(data.createdAt).toLocaleDateString()}</span>
-            </div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Split Details</h2>
+            {!isEditingCharges && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={startEditingCharges}
+                data-testid="button-edit-charges"
+              >
+                <Pencil className="h-4 w-4 mr-1" />
+                Edit
+              </Button>
+            )}
           </div>
+          
+          {isEditingCharges ? (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground text-sm">Split Code:</span>
+                <span className="font-mono font-semibold text-sm">{data.code}</span>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm text-muted-foreground">Service Charge (%)</label>
+                <Input
+                  type="number"
+                  value={editServiceCharge}
+                  onChange={(e) => setEditServiceCharge(parseFloat(e.target.value) || 0)}
+                  step="0.5"
+                  min="0"
+                  className="h-10"
+                  data-testid="input-edit-service-charge"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm text-muted-foreground">Tip (%)</label>
+                <Input
+                  type="number"
+                  value={editTipPercent}
+                  onChange={(e) => setEditTipPercent(parseFloat(e.target.value) || 0)}
+                  step="0.5"
+                  min="0"
+                  className="h-10"
+                  data-testid="input-edit-tip-percent"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditingCharges(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-edit-charges"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSaveCharges}
+                  disabled={updateChargesMutation.isPending}
+                  className="flex-1"
+                  data-testid="button-save-charges"
+                >
+                  {updateChargesMutation.isPending ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Split Code:</span>
+                <span className="font-mono font-semibold">{data.code}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Service Charge:</span>
+                <span>{data.serviceCharge}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tip:</span>
+                <span>{data.tipPercent}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Created:</span>
+                <span>{new Date(data.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+          )}
         </Card>
 
         {/* Extra Contribution Note - shown when someone has added extra money */}

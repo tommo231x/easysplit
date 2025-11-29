@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { MenuItem, Person, ItemQuantity } from "@shared/schema";
 import { nanoid } from "nanoid";
 
@@ -288,12 +288,19 @@ export default function AdjustSplit() {
           service: t.service,
           tip: t.tip,
           total: t.total,
+          extraContribution: t.extraContribution,
+          baseTotal: t.baseTotal,
         })),
       });
       
       return await response.json();
     },
     onSuccess: (data: { code: string }) => {
+      // Invalidate the split query cache immediately so view-split shows updated data
+      queryClient.invalidateQueries({
+        queryKey: [`/api/splits/${code}`],
+      });
+      
       toast({
         title: "Split updated!",
         description: "Everyone with the link will see your changes.",
@@ -626,17 +633,22 @@ export default function AdjustSplit() {
             </span>
           </div>
         </Card>
-
-        <Button
-          onClick={handleSave}
-          disabled={saveMutation.isPending}
-          className="w-full min-h-12"
-          data-testid="button-save"
-        >
-          <Save className="h-4 w-4 mr-2" />
-          {saveMutation.isPending ? "Saving..." : "Save Changes"}
-        </Button>
       </main>
+
+      {/* Sticky Save Button - always visible at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg z-20">
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          <Button
+            onClick={handleSave}
+            disabled={saveMutation.isPending}
+            className="w-full h-14 text-base"
+            data-testid="button-save"
+          >
+            <Save className="h-5 w-5 mr-2" />
+            {saveMutation.isPending ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

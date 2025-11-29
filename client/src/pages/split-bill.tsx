@@ -715,14 +715,15 @@ const handleCalculate = () => {
         </Card>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
-        <div className="max-w-2xl mx-auto">
+      {/* Sticky Calculate Button - with extra padding to prevent accidental clicks */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg z-20">
+        <div className="max-w-2xl mx-auto px-4 py-4">
           <Button
             onClick={handleCalculate}
-            className="w-full h-12"
+            className="w-full h-14 text-base"
             data-testid="button-calculate"
           >
-            <CalculatorIcon className="h-4 w-4 mr-2" />
+            <CalculatorIcon className="h-5 w-5 mr-2" />
             Calculate Split
           </Button>
         </div>

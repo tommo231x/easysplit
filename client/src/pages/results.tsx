@@ -583,8 +583,8 @@ export default function Results() {
                 className="flex-1"
                 data-testid="button-adjust-split"
               >
-                <UserPlus className="h-4 w-4 mr-2" />
-                Add Yours
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Split
               </Button>
               <Button
                 onClick={toggleSplitStatus}

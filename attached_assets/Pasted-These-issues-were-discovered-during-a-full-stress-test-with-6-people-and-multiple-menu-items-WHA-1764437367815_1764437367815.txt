@@ -1,0 +1,96 @@
+These issues were discovered during a full stress test with 6 people and multiple menu items.
+
+✅ WHAT WORKS (Do NOT change these)
+
+Homepage loads cleanly with working actions (“Create / Upload Menu,” “Split a Bill,” “My Splits”).
+
+Adding many items & people works without errors.
+
+Assigning items works.
+
+Calculating totals works.
+
+Saving a split generates a valid link.
+
+Opening the share link loads correctly.
+
+Editing contributions from the shared view works.
+
+Toast notifications (“Split saved!”, “Split updated!”) work properly.
+
+⚠️ ISSUES TO FIX
+1. Totals briefly show old values after saving
+
+On the results page (after saving changes), the Grand Total sometimes shows the previous value until the user scrolls.
+
+This is a UI refresh issue — likely the component isn’t re-rendering immediately after save.
+
+Required change:
+
+Ensure recalculation + rerender happens instantly after changes are saved.
+
+Investigate state sync between EditContributions → ResultsView.
+
+2. Accidental clicks on “Calculate Split”
+
+In the Assign Items screen, the “Calculate Split” button sits directly at the bottom.
+
+When the list is long, mis-clicks on “+” or scrolling can accidentally hit this button.
+
+Required change:
+
+Add spacing or reposition the button.
+
+Alternatively stick the button to the bottom as a floating action button.
+
+3. Edit Contributions → Save UX issues
+
+Editing contributions for multiple people requires heavy scrolling.
+
+The Save button is at the very bottom, forcing the user to scroll through all 6 person cards.
+
+Required change:
+
+Implement a sticky Save button (fixed bottom).
+
+Or add a “Save” button at the top and bottom.
+
+Optional: Add a compact list view or collapsible person cards.
+
+4. Confusing “Make Changes” → “Add Yours” behaviour
+
+On reopening a saved split, “Make Changes” disappears and is replaced by “Add Yours.”
+
+This looks like a different action, but both open the edit mode.
+
+Required change:
+
+Unify the label: always show “Edit Split”.
+
+“Add Yours” should only appear if the user is adding themselves, not editing existing data.
+
+Ensure labels reflect the correct action.
+
+5. Service charge cannot be changed from the results screen
+
+Users can’t modify service percentage without going all the way back through the flow.
+
+Required change:
+
+Add “Edit service charge” button on the results page.
+
+Or show a small inline editable field.
+
+🎯 Overall Goal for Agent
+
+Implement the fixes above, cleanly and minimally, without breaking the existing flows that already work correctly.
+
+Keep the code modular, readable, and consistent with the project’s current structure.
+
+If you understand, begin by:
+
+Summarising what needs to be changed in the codebase.
+
+Identifying which files/components must be edited.
+
+Then start implementing fixes one by one.
