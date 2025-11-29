@@ -7,6 +7,11 @@ const app = express();
 // Enable CORS for all routes (permissive for now, can be tightened later)
 app.use(cors({ origin: true }));
 
+// Render health check endpoint
+app.get("/healthz", (_req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 declare module 'http' {
   interface IncomingMessage {
     rawBody: unknown
