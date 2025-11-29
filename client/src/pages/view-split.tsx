@@ -50,6 +50,8 @@ export default function ViewSplit() {
       service: number;
       tip: number;
       total: number;
+      extraContribution?: number;
+      baseTotal?: number;
     }>;
     createdAt: string;
   }>({
@@ -366,6 +368,35 @@ export default function ViewSplit() {
           </div>
         </Card>
 
+        {/* Extra Contribution Note - shown when someone has added extra money */}
+        {(() => {
+          const contributorsWithExtra = displayTotals.filter((t: any) => (t.extraContribution ?? 0) > 0);
+          if (contributorsWithExtra.length > 0) {
+            const contributorNames = contributorsWithExtra.map((t: any) => t.person.name);
+            const totalExtra = contributorsWithExtra.reduce((sum: number, t: any) => sum + (t.extraContribution ?? 0), 0);
+            return (
+              <Card className="p-4 bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800" data-testid="card-extra-contribution-note">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center flex-shrink-0">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                      {contributorNames.length === 1 
+                        ? `${contributorNames[0]} added ${data.currency}${totalExtra.toFixed(2)} extra to help cover the bill.`
+                        : `${contributorNames.join(" & ")} added ${data.currency}${totalExtra.toFixed(2)} extra to help cover the bill.`}
+                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                      Everyone else's share has been automatically reduced.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            );
+          }
+          return null;
+        })()}
+
         {displayTotals.map((personTotal) => {
           const personItems = data.quantities
             .filter((q) => q.personId === personTotal.person.id)
@@ -379,10 +410,14 @@ export default function ViewSplit() {
             .filter((q) => q.item);
           
           // Use displayTotals for all monetary values (cached to avoid showing zeros)
-          const fullTotal = displayTotals.find(t => t.person.id === personTotal.person.id);
-          const subtotal = (fullTotal as any)?.subtotal ?? personTotal.total;
-          const service = (fullTotal as any)?.service ?? 0;
-          const tip = (fullTotal as any)?.tip ?? 0;
+          const fullTotal = displayTotals.find(t => t.person.id === personTotal.person.id) as any;
+          const subtotal = fullTotal?.subtotal ?? personTotal.total;
+          const service = fullTotal?.service ?? 0;
+          const tip = fullTotal?.tip ?? 0;
+          const extraContribution = fullTotal?.extraContribution ?? 0;
+          const baseTotal = fullTotal?.baseTotal ?? personTotal.total;
+          const hasExtraContributors = displayTotals.some((t: any) => (t.extraContribution ?? 0) > 0);
+          const reduction = hasExtraContributors && extraContribution === 0 ? baseTotal - personTotal.total : 0;
 
           return (
             <Card key={personTotal.person.id} className="p-6" data-testid={`card-person-${personTotal.person.id}`}>
@@ -424,6 +459,22 @@ export default function ViewSplit() {
                     {data.currency}{tip.toFixed(2)}
                   </span>
                 </div>
+                {extraContribution > 0 && (
+                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                    <span>Extra Contribution</span>
+                    <span data-testid={`text-extra-${personTotal.person.id}`}>
+                      +{data.currency}{extraContribution.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                {reduction > 0 && (
+                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                    <span>Reduction from others</span>
+                    <span data-testid={`text-reduction-${personTotal.person.id}`}>
+                      -{data.currency}{reduction.toFixed(2)}
+                    </span>
+                  </div>
+                )}
                 <div className="border-t pt-2 mt-2">
                   <div className="flex justify-between font-semibold">
                     <span>Total</span>

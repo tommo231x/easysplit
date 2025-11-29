@@ -553,23 +553,27 @@ export default function AdjustSplit() {
 
               <Separator className="my-4" />
 
-              <div className="mb-4">
-                <Label htmlFor={`extra-${person.id}`} className="text-sm">
-                  Extra Contribution (optional)
+              <div className="mb-4 p-4 bg-muted/30 rounded-lg border border-dashed">
+                <Label htmlFor={`extra-${person.id}`} className="text-sm font-semibold flex items-center gap-2">
+                  Add Extra / Round Up
                 </Label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Add extra money to reduce everyone else's bill
+                <p className="text-sm text-muted-foreground mt-1 mb-3">
+                  Want to cover a bit more? Enter an amount here. This will automatically lower everyone else's share.
                 </p>
-                <Input
-                  id={`extra-${person.id}`}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={person.extraContribution || ""}
-                  onChange={(e) => updateExtraContribution(person.id, parseFloat(e.target.value) || 0)}
-                  placeholder="0.00"
-                  data-testid={`input-extra-${personIndex}`}
-                />
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">{currency}</span>
+                  <Input
+                    id={`extra-${person.id}`}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={person.extraContribution || ""}
+                    onChange={(e) => updateExtraContribution(person.id, parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                    className="flex-1"
+                    data-testid={`input-extra-${personIndex}`}
+                  />
+                </div>
               </div>
 
               {personTotal && (

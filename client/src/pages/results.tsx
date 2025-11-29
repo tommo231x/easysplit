@@ -352,6 +352,35 @@ export default function Results() {
           </div>
         )}
         
+        {/* Extra Contribution Note - shown when someone has added extra money */}
+        {(() => {
+          const contributorsWithExtra = totals.filter((t) => (t.extraContribution ?? 0) > 0);
+          if (contributorsWithExtra.length > 0) {
+            const contributorNames = contributorsWithExtra.map((t) => t.person.name);
+            const totalExtra = contributorsWithExtra.reduce((sum, t) => sum + (t.extraContribution ?? 0), 0);
+            return (
+              <Card className="p-4 bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800" data-testid="card-extra-contribution-note">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center flex-shrink-0">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                      {contributorNames.length === 1 
+                        ? `${contributorNames[0]} added ${currency}${totalExtra.toFixed(2)} extra to help cover the bill.`
+                        : `${contributorNames.join(" & ")} added ${currency}${totalExtra.toFixed(2)} extra to help cover the bill.`}
+                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                      Everyone else's share has been automatically reduced.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            );
+          }
+          return null;
+        })()}
+
         <div className="space-y-4">
           {totals.map((personTotal) => {
             const personItems = quantities
@@ -364,6 +393,11 @@ export default function Results() {
                 };
               })
               .filter((q) => q.item);
+            
+            const extraContribution = personTotal.extraContribution ?? 0;
+            const baseTotal = personTotal.baseTotal ?? personTotal.total;
+            const hasExtraContributors = totals.some((t) => (t.extraContribution ?? 0) > 0);
+            const reduction = hasExtraContributors && extraContribution === 0 ? baseTotal - personTotal.total : 0;
 
             return (
               <Card key={personTotal.person.id} className="p-6" data-testid={`card-person-${personTotal.person.id}`}>
@@ -411,6 +445,22 @@ export default function Results() {
                     <span data-testid={`text-tip-${personTotal.person.id}`}>
                       {currency}
                       {personTotal.tip.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                {extraContribution > 0 && (
+                  <div className="flex justify-between text-green-600 dark:text-green-400">
+                    <span>Extra Contribution</span>
+                    <span data-testid={`text-extra-${personTotal.person.id}`}>
+                      +{currency}{extraContribution.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                {reduction > 0 && (
+                  <div className="flex justify-between text-green-600 dark:text-green-400">
+                    <span>Reduction from others</span>
+                    <span data-testid={`text-reduction-${personTotal.person.id}`}>
+                      -{currency}{reduction.toFixed(2)}
                     </span>
                   </div>
                 )}

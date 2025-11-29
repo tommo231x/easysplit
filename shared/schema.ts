@@ -55,6 +55,8 @@ export const personTotalSchema = z.object({
   service: z.number().nonnegative().finite(),
   tip: z.number().nonnegative().finite(),
   total: z.number().nonnegative().finite(),
+  extraContribution: z.number().nonnegative().finite().optional(),
+  baseTotal: z.number().nonnegative().finite().optional(),
 });
 
 // Bill split database schema

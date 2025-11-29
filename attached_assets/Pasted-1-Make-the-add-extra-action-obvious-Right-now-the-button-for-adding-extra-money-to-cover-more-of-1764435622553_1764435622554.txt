@@ -1,0 +1,109 @@
+1. Make the “add extra” action obvious
+
+Right now the button for adding extra money to cover more of the bill is not obvious.
+
+Change:
+
+Rename this button to something clear, e.g.:
+
+“Add Extra / Round Up”
+or
+
+“Add Extra to Cover More”
+
+Choose a label that fits the layout and makes it obvious this is how you add more than your own share.
+
+Make sure the button is easy to notice on mobile and desktop (no tiny, tucked-away link).
+
+2. Add a helper note explaining what the button does
+
+Next to or just above/below that button, add a short helper line like:
+
+“If you want to pay a bit more to help cover the total, tap this button. Any extra you add will lower everyone else’s cost automatically.”
+
+Key points:
+
+It must be clear that:
+
+they’re paying more,
+
+this will reduce everyone else’s amounts, and
+
+the app will recalculate that automatically.
+
+Keep it friendly and not too wordy.
+
+3. When extra money is added, show a clear note to everyone
+
+When a user actually adds extra money and saves the split:
+
+The backend already recalculates totals. We now need a visible note on the shared split for all viewers.
+
+Add a small, friendly note somewhere near the totals / header, such as:
+
+If you can attach it to a specific person (we know who added extra):
+
+“[Name] added extra money to help cover the bill. Your amounts have been updated and are now lower.”
+
+If you can’t reliably attach a name, use:
+
+“Someone added extra money to help cover the bill. Your amounts have been updated and are now lower.”
+
+Requirements:
+
+This note must be visible to everyone viewing that split via the share link.
+
+It should be non-intrusive (no blocking modal), but obvious enough that people understand why their totals changed.
+
+It should be clear that:
+
+the recalculation is already done,
+
+their new share is lower because of that extra payment.
+
+4. Sync behaviour and refresh
+
+Use the existing sync behaviour:
+
+Changes only become visible to others after the user presses Save.
+
+The existing auto-refresh / polling (e.g. every 5 seconds on the view page) should pick up:
+
+the new totals, and
+
+the “added extra” note.
+
+Do not push live updates on every keystroke.
+We only want updates on save, so it doesn’t become chaotic if many people are editing.
+
+5. Do not change the data model unless absolutely necessary
+
+Prefer to implement this as:
+
+UI labels,
+
+helper text,
+
+and a simple metadata field / flag (if needed) to store “extra added” and optionally “by whom”.
+
+Do not introduce heavy refactors or complex new flows.
+
+6. When finished, summarise
+
+When you’re done, please summarise:
+
+Which files you changed.
+
+The final button label you chose and where it appears.
+
+The exact helper text you used near the button.
+
+The exact note text that appears after someone adds extra.
+
+How this looks and behaves on mobile vs desktop.
+
+A quick confirmation that:
+
+the totals recalc after extra is added, and
+
+all users viewing the shared split see the new note and new totals after the next refresh.
