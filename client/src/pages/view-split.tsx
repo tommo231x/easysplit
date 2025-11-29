@@ -442,47 +442,60 @@ export default function ViewSplit() {
           </div>
         )}
         
-        {/* Quick Add Section */}
-        <Card className="p-4 bg-primary/5">
-          <form onSubmit={handleNameSubmit} className="space-y-3">
+        {/* Quick Add Section - Mobile Friendly */}
+        <Card className="p-5 bg-primary/5 border-primary/20">
+          <div className="text-center mb-4">
+            <h2 className="text-lg font-semibold">Join This Split</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Enter your name to add what you ordered
+            </p>
+          </div>
+          <form onSubmit={handleNameSubmit} className="space-y-4">
             <div>
-              <label htmlFor="user-name" className="text-sm font-medium">
+              <label htmlFor="user-name" className="text-sm font-medium sr-only">
                 Your name
               </label>
               <Input
                 id="user-name"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
-                placeholder="Enter your name"
-                className="mt-1"
+                placeholder="Your name"
+                className="h-12 text-center text-lg"
                 data-testid="input-user-name"
               />
             </div>
             
             {userName.trim() && (
-              <p className="text-sm text-muted-foreground" data-testid="text-user-status">
-                {isUserInSplit 
-                  ? `You're already in this split as "${existingPerson?.name}"`
-                  : "You're not in this split yet"}
-              </p>
+              <div className={`text-center p-3 rounded-lg ${isUserInSplit ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'}`} data-testid="text-user-status">
+                <p className={`text-sm font-medium ${isUserInSplit ? 'text-green-700 dark:text-green-300' : 'text-muted-foreground'}`}>
+                  {isUserInSplit 
+                    ? `Welcome back, ${existingPerson?.name}!`
+                    : "You're not in this split yet"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {isUserInSplit 
+                    ? "Tap below to edit your items"
+                    : "Tap below to add yourself and your items"}
+                </p>
+              </div>
             )}
             
             <Button
               type="button"
               onClick={handleAddYoursClick}
               disabled={!userName.trim()}
-              className="w-full min-h-12"
+              className="w-full h-14 text-base"
               data-testid="button-add-yours"
             >
               {isUserInSplit ? (
                 <>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Contributions
+                  <Edit className="h-5 w-5 mr-2" />
+                  Edit My Items
                 </>
               ) : (
                 <>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add Yours
+                  <UserPlus className="h-5 w-5 mr-2" />
+                  Add My Items
                 </>
               )}
             </Button>
@@ -698,38 +711,24 @@ export default function ViewSplit() {
           );
         })}
 
-        <Card className="p-6 bg-primary/5">
-          <div className="flex justify-between items-center">
-            <span className="text-lg font-semibold">Grand Total</span>
-            <span className="text-2xl font-bold" data-testid="text-grand-total">
-              {data.currency}{grandTotal.toFixed(2)}
-            </span>
-          </div>
-        </Card>
-
-        <Card className="p-4 bg-primary/5 space-y-3">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Shareable link:</span>
-            <code className="flex-1 font-mono text-xs bg-background px-2 py-1 rounded border">
-              {window.location.origin}/split/{code}
-            </code>
-          </div>
+        {/* Share Section */}
+        <Card className="p-4 space-y-3">
+          <h3 className="font-medium text-sm">Share This Split</h3>
           <div className="flex gap-2">
             <Button
               onClick={copyLink}
               variant="outline"
-              size="sm"
-              className="flex-1"
+              className="flex-1 h-12"
               data-testid="button-copy-link"
             >
               {linkCopied ? (
                 <>
-                  <Check className="h-4 w-4 mr-2" />
+                  <Check className="h-5 w-5 mr-2" />
                   Copied!
                 </>
               ) : (
                 <>
-                  <LinkIcon className="h-4 w-4 mr-2" />
+                  <LinkIcon className="h-5 w-5 mr-2" />
                   Copy Link
                 </>
               )}
@@ -737,41 +736,52 @@ export default function ViewSplit() {
             <Button
               onClick={shareLink}
               variant="outline"
-              size="sm"
-              className="flex-1"
+              className="flex-1 h-12"
               data-testid="button-share"
             >
-              <Share2 className="h-4 w-4 mr-2" />
+              <Share2 className="h-5 w-5 mr-2" />
               Share
             </Button>
           </div>
         </Card>
 
         <div className="flex gap-2">
-          <Button onClick={copyBreakdown} variant="outline" className="flex-1" data-testid="button-copy-breakdown">
-            <Copy className="h-4 w-4 mr-2" />
-            Copy
+          <Button onClick={copyBreakdown} variant="outline" className="flex-1 h-12" data-testid="button-copy-breakdown">
+            <Copy className="h-5 w-5 mr-2" />
+            Copy Breakdown
           </Button>
           <Button
             onClick={toggleSplitStatus}
             variant={splitStatus === "open" ? "destructive" : "default"}
-            className="flex-1"
+            className="flex-1 h-12"
             data-testid="button-toggle-status"
           >
             {splitStatus === "open" ? (
               <>
-                <XCircle className="h-4 w-4 mr-2" />
-                Close
+                <XCircle className="h-5 w-5 mr-2" />
+                Close Split
               </>
             ) : (
               <>
-                <CheckCircle2 className="h-4 w-4 mr-2" />
+                <CheckCircle2 className="h-5 w-5 mr-2" />
                 Reopen
               </>
             )}
           </Button>
         </div>
       </main>
+
+      {/* Sticky Footer with Grand Total */}
+      <div className="fixed bottom-0 left-0 right-0 bg-primary text-primary-foreground border-t shadow-lg z-20">
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-semibold">Grand Total</span>
+            <span className="text-2xl font-bold font-mono" data-testid="text-grand-total">
+              {data.currency}{grandTotal.toFixed(2)}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

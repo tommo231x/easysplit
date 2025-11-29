@@ -407,42 +407,29 @@ export default function AdjustSplit() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        {/* Step Guide */}
-        <Card className="p-4 bg-muted/50">
-          <div className="flex items-center justify-center gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">1</span>
-              <span className="hidden sm:inline">Add people</span>
-            </div>
-            <div className="w-8 h-px bg-border" />
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">2</span>
-              <span className="hidden sm:inline">Assign items</span>
-            </div>
-            <div className="w-8 h-px bg-border" />
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-muted-foreground/30 text-muted-foreground flex items-center justify-center text-xs font-medium">3</span>
-              <span className="hidden sm:inline">Save</span>
-            </div>
+        {/* Mobile-Friendly Instructions */}
+        <Card className="p-4 bg-primary/5 border-primary/20">
+          <div className="text-center space-y-2">
+            <h2 className="font-semibold text-lg">Edit Your Items</h2>
+            <p className="text-sm text-muted-foreground">
+              Use +/- buttons to mark what you ordered, then tap Save
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Split code: <span className="font-mono font-semibold">{code}</span>
+            </p>
           </div>
         </Card>
 
-        <Card className="p-4">
-          <p className="text-sm text-muted-foreground">
-            Editing split <span className="font-mono font-semibold">{code}</span>. Changes update for everyone.
-          </p>
-        </Card>
-
         {/* Quick Actions - Add Person & Add Item */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           <Button
             variant="outline"
             onClick={addPerson}
-            className="w-full min-h-12"
+            className="w-full h-12"
             data-testid="button-add-person-top"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Person
+            <Plus className="h-5 w-5 mr-2" />
+            Add New Person
           </Button>
           
           {/* Add Item Section - Right below Add Person */}

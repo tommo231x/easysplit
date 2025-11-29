@@ -334,7 +334,7 @@ export default function Results() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24">
       <header className="sticky top-0 z-10 bg-background border-b h-16 flex items-center px-4 gap-2">
         <Link href="/split-bill">
           <Button variant="ghost" size="icon" data-testid="button-back">
@@ -493,40 +493,24 @@ export default function Results() {
           </div>
         )}
 
-        <Card className="p-6 bg-primary text-primary-foreground">
-          <div className="flex justify-between items-center">
-            <span className="text-xl font-bold">Grand Total</span>
-            <span className="text-2xl font-bold font-mono" data-testid="text-grand-total">
-              {currency}
-              {grandTotal.toFixed(2)}
-            </span>
-          </div>
-        </Card>
-
         {splitCode && (
-          <Card className="p-4 bg-primary/5 space-y-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Shareable link:</span>
-              <code className="flex-1 font-mono text-xs bg-background px-2 py-1 rounded border" data-testid="text-split-link">
-                {window.location.origin}/split/{splitCode}
-              </code>
-            </div>
+          <Card className="p-4 space-y-3">
+            <h3 className="font-medium text-sm">Share This Split</h3>
             <div className="flex gap-2">
               <Button
                 onClick={copyLink}
                 variant="outline"
-                size="sm"
-                className="flex-1"
+                className="flex-1 h-12"
                 data-testid="button-copy-link"
               >
                 {linkCopied ? (
                   <>
-                    <Check className="h-4 w-4 mr-2" />
+                    <Check className="h-5 w-5 mr-2" />
                     Copied!
                   </>
                 ) : (
                   <>
-                    <LinkIcon className="h-4 w-4 mr-2" />
+                    <LinkIcon className="h-5 w-5 mr-2" />
                     Copy Link
                   </>
                 )}
@@ -534,11 +518,10 @@ export default function Results() {
               <Button
                 onClick={shareLink}
                 variant="outline"
-                size="sm"
-                className="flex-1"
+                className="flex-1 h-12"
                 data-testid="button-share-link"
               >
-                <Share2 className="h-4 w-4 mr-2" />
+                <Share2 className="h-5 w-5 mr-2" />
                 Share
               </Button>
             </div>
@@ -549,17 +532,17 @@ export default function Results() {
           <Button
             onClick={copyBreakdown}
             variant="outline"
-            className="flex-1"
+            className="flex-1 h-12"
             data-testid="button-copy-breakdown"
           >
             {copied ? (
               <>
-                <Check className="h-4 w-4 mr-2" />
+                <Check className="h-5 w-5 mr-2" />
                 Copied!
               </>
             ) : (
               <>
-                <Copy className="h-4 w-4 mr-2" />
+                <Copy className="h-5 w-5 mr-2" />
                 Copy Breakdown
               </>
             )}
@@ -569,37 +552,37 @@ export default function Results() {
             <Button
               onClick={handleSaveSplit}
               disabled={saveSplitMutation.isPending}
-              className="flex-1"
+              className="flex-1 h-12"
               data-testid="button-save-split"
             >
-              <Share2 className="h-4 w-4 mr-2" />
-              {saveSplitMutation.isPending ? "Saving..." : "Save Split"}
+              <Share2 className="h-5 w-5 mr-2" />
+              {saveSplitMutation.isPending ? "Saving..." : "Save & Share"}
             </Button>
           ) : (
             <>
               <Button
                 onClick={() => navigate(`/adjust-split/${splitCode}`)}
                 variant="outline"
-                className="flex-1"
+                className="flex-1 h-12"
                 data-testid="button-adjust-split"
               >
-                <Edit className="h-4 w-4 mr-2" />
+                <Edit className="h-5 w-5 mr-2" />
                 Edit Split
               </Button>
               <Button
                 onClick={toggleSplitStatus}
                 variant={splitStatus === "open" ? "destructive" : "default"}
-                className="flex-1"
+                className="flex-1 h-12"
                 data-testid="button-toggle-status"
               >
                 {splitStatus === "open" ? (
                   <>
-                    <XCircle className="h-4 w-4 mr-2" />
+                    <XCircle className="h-5 w-5 mr-2" />
                     Close
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    <CheckCircle2 className="h-5 w-5 mr-2" />
                     Reopen
                   </>
                 )}
@@ -608,6 +591,18 @@ export default function Results() {
           )}
         </div>
       </main>
+
+      {/* Sticky Footer with Grand Total */}
+      <div className="fixed bottom-0 left-0 right-0 bg-primary text-primary-foreground border-t shadow-lg z-20">
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-semibold">Grand Total</span>
+            <span className="text-2xl font-bold font-mono" data-testid="text-grand-total">
+              {currency}{grandTotal.toFixed(2)}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
