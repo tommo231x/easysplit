@@ -145,7 +145,7 @@ export default function MySplits() {
                         {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-1 truncate">
+                    <p className="text-sm text-muted-foreground mb-1">
                       {participantNames}
                     </p>
                     <p className="font-semibold text-lg">

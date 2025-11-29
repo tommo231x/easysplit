@@ -544,7 +544,7 @@ const handleCalculate = () => {
                                     {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                   </span>
                                 </div>
-                                <p className="text-sm text-muted-foreground truncate">
+                                <p className="text-sm text-muted-foreground">
                                   {participantNames}
                                 </p>
                               </div>
@@ -627,14 +627,14 @@ const handleCalculate = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {people.map((person) => (
                       <div
                         key={person.id}
-                        className="flex items-center justify-between bg-muted/50 rounded-lg p-2"
+                        className="flex items-center justify-between bg-muted/50 rounded-lg p-2 gap-2"
                       >
-                        <span className="text-sm truncate flex-1">{person.name}</span>
-                        <div className="flex items-center gap-1">
+                        <span className="text-sm flex-1 min-w-0">{person.name}</span>
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <Button
                             variant="outline"
                             size="icon"
