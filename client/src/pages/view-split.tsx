@@ -46,7 +46,10 @@ export default function ViewSplit() {
     queryKey: [`/api/splits/${code}`],
     enabled: code.length >= 6 && code.length <= 8,
     retry: false,
+    refetchInterval: 5000, // Auto-refresh every 5 seconds for real-time updates
+    refetchIntervalInBackground: false, // Only refresh when tab is active
   });
+  
 
   const copyBreakdown = async () => {
     if (!data) return;
@@ -199,7 +202,11 @@ export default function ViewSplit() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </Link>
-        <h1 className="text-xl font-semibold">Bill Split</h1>
+        <h1 className="text-xl font-semibold flex-1">Bill Split</h1>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="indicator-live">
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span>Live</span>
+        </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
@@ -349,12 +356,12 @@ export default function ViewSplit() {
         <div className="flex gap-2">
           <Button onClick={copyBreakdown} variant="outline" className="flex-1" data-testid="button-copy-breakdown">
             <Copy className="h-4 w-4 mr-2" />
-            Copy Breakdown
+            Copy
           </Button>
           <Link href={`/adjust-split/${code}`} className="flex-1">
             <Button variant="default" className="w-full" data-testid="button-adjust-split">
               <Edit className="h-4 w-4 mr-2" />
-              Adjust Split
+              Edit
             </Button>
           </Link>
           <Button

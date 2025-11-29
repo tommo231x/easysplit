@@ -623,7 +623,7 @@ const handleCalculate = () => {
                             className="w-8 text-center font-mono font-medium"
                             data-testid={`text-quantity-${item.id}-${person.id}`}
                           >
-                            {getQuantity(item.id, person.id)}
+                            {getQuantity(item.id, person.id) || "-"}
                           </span>
                           <Button
                             variant="outline"
@@ -660,8 +660,9 @@ const handleCalculate = () => {
                 <Input
                   id="service"
                   type="number"
-                  value={serviceCharge}
+                  value={serviceCharge || ""}
                   onChange={(e) => setServiceCharge(parseFloat(e.target.value) || 0)}
+                  placeholder="0"
                   className="h-12"
                   step="0.5"
                   min="0"

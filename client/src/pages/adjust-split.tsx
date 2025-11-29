@@ -396,8 +396,9 @@ export default function AdjustSplit() {
                       <Input
                         type="number"
                         min="0"
-                        value={qty}
+                        value={qty || ""}
                         onChange={(e) => updateQuantity(person.id, item.id, parseInt(e.target.value) || 0)}
+                        placeholder="0"
                         className="w-20"
                         data-testid={`input-quantity-${personIndex}-${item.id}`}
                       />
@@ -536,7 +537,7 @@ export default function AdjustSplit() {
           data-testid="button-save"
         >
           <Save className="h-4 w-4 mr-2" />
-          {saveMutation.isPending ? "Saving..." : "Save Adjusted Split"}
+          {saveMutation.isPending ? "Saving..." : "Save Changes"}
         </Button>
       </main>
     </div>

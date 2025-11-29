@@ -32,9 +32,22 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    host: "0.0.0.0",
+    port: 5000,
+    strictPort: true,
     fs: {
       strict: true,
       deny: ["**/.*"],
+    },
+    proxy: {
+      "/api": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+      },
+      "/healthz": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+      },
     },
   },
 });

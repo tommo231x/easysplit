@@ -523,7 +523,7 @@ export default function Results() {
               data-testid="button-save-split"
             >
               <Share2 className="h-4 w-4 mr-2" />
-              {saveSplitMutation.isPending ? "Saving..." : "Save & Share"}
+              {saveSplitMutation.isPending ? "Saving..." : "Save Split"}
             </Button>
           ) : (
             <>
@@ -534,7 +534,7 @@ export default function Results() {
                 data-testid="button-adjust-split"
               >
                 <Edit className="h-4 w-4 mr-2" />
-                Adjust Split
+                Edit
               </Button>
               <Button
                 onClick={toggleSplitStatus}
@@ -545,12 +545,12 @@ export default function Results() {
                 {splitStatus === "open" ? (
                   <>
                     <XCircle className="h-4 w-4 mr-2" />
-                    Close Split
+                    Close
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Reopen Split
+                    Reopen
                   </>
                 )}
               </Button>
