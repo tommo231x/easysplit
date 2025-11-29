@@ -1,7 +1,29 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// For ES modules, we need to define __dirname manually
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Dynamic imports for development vs production
+let setupVite: any;
+let serveStatic: any;
+let log: any;
+
+try {
+  const viteModule = await import("./vite.js");
+  setupVite = viteModule.setupVite;
+  serveStatic = viteModule.serveStatic;
+  log = viteModule.log;
+} catch {
+  // Fallback for production when vite.ts doesn't exist
+  setupVite = undefined;
+  serveStatic = undefined;
+  log = (msg: string) => console.log(`[express] ${msg}`);
+}
 
 const app = express();
 
@@ -64,11 +86,12 @@ app.use((req, res, next) => {
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
+  if (app.get("env") === "development" && setupVite) {
     await setupVite(app, server);
-  } else {
+  } else if (serveStatic) {
     serveStatic(app);
   }
+  // In production without vite, just serve API endpoints
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
