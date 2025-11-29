@@ -1,5 +1,5 @@
 import { useRoute, Link, useLocation } from "wouter";
-import { ArrowLeft, Plus, Trash2, Save } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -33,6 +33,7 @@ export default function AdjustSplit() {
   
   const [newItemName, setNewItemName] = useState("");
   const [newItemPrice, setNewItemPrice] = useState("");
+  const [showAddItem, setShowAddItem] = useState(false);
 
   const { data: originalSplit, isLoading } = useQuery<{
     code: string;
@@ -50,14 +51,47 @@ export default function AdjustSplit() {
     retry: false,
   });
 
+  const [focusPersonId, setFocusPersonId] = useState<string | null>(null);
+
   useEffect(() => {
     if (originalSplit) {
-      setPeople(
-        originalSplit.people.map((p) => ({
-          ...p,
-          extraContribution: 0,
-        }))
-      );
+      const existingPeople = originalSplit.people.map((p) => ({
+        ...p,
+        extraContribution: 0,
+      }));
+      
+      let personToFocus: string | null = null;
+      
+      // Check if we need to add a new person from view-split page
+      const newPersonName = sessionStorage.getItem("easysplit-add-person-name");
+      if (newPersonName) {
+        // Only add if person doesn't already exist
+        const nameExists = existingPeople.some(
+          p => p.name.toLowerCase().trim() === newPersonName.toLowerCase().trim()
+        );
+        
+        if (!nameExists) {
+          const newPerson: PersonWithContribution = {
+            id: nanoid(),
+            name: newPersonName.trim(),
+            extraContribution: 0,
+          };
+          existingPeople.push(newPerson);
+          personToFocus = newPerson.id;
+        }
+        
+        // Clear the session storage
+        sessionStorage.removeItem("easysplit-add-person-name");
+      }
+      
+      // Check if we need to scroll to an existing person
+      const focusId = sessionStorage.getItem("easysplit-focus-person-id");
+      if (focusId) {
+        personToFocus = focusId;
+        sessionStorage.removeItem("easysplit-focus-person-id");
+      }
+      
+      setPeople(existingPeople);
       setItems(originalSplit.items);
       setQuantities(originalSplit.quantities);
       setServiceCharge(originalSplit.serviceCharge);
@@ -65,8 +99,31 @@ export default function AdjustSplit() {
       setCurrency(originalSplit.currency);
       setMenuCode(originalSplit.menuCode);
       setSplitName(originalSplit.name || null);
+      
+      // Set focus person ID after state is set
+      if (personToFocus) {
+        setFocusPersonId(personToFocus);
+      }
     }
   }, [originalSplit]);
+  
+  // Scroll to focused person after people are set
+  useEffect(() => {
+    if (focusPersonId && people.length > 0) {
+      // Find the index of the person to focus
+      const personIndex = people.findIndex(p => p.id === focusPersonId);
+      if (personIndex >= 0) {
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+          const element = document.querySelector(`[data-testid="card-person-${personIndex}"]`);
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+          setFocusPersonId(null);
+        }, 100);
+      }
+    }
+  }, [focusPersonId, people]);
 
   const calculateTotals = () => {
     const totals = people.map((person) => {
@@ -92,14 +149,12 @@ export default function AdjustSplit() {
 
     const totalExtraContributions = totals.reduce((sum, t) => sum + t.extraContribution, 0);
     
-    // Iteratively redistribute extra contributions to ensure even distribution
     const reductions = new Map<string, number>();
     totals.forEach((t) => reductions.set(t.person.id, 0));
 
     let remaining = totalExtraContributions;
     let activeRecipients = totals.filter((t) => t.extraContribution === 0);
 
-    // Keep redistributing until all extra is allocated or all recipients hit zero
     while (remaining > 0 && activeRecipients.length > 0) {
       const sharePerRecipient = remaining / activeRecipients.length;
       let redistributionNeeded = false;
@@ -117,14 +172,12 @@ export default function AdjustSplit() {
         }
       });
 
-      // Remove recipients who have hit zero from active list
       if (redistributionNeeded) {
         activeRecipients = activeRecipients.filter((recipient) => {
           const currentReduction = reductions.get(recipient.person.id) || 0;
           return currentReduction < recipient.baseTotal;
         });
       } else {
-        // All recipients got their full share, we're done
         break;
       }
     }
@@ -177,6 +230,7 @@ export default function AdjustSplit() {
     setItems([...items, newItem]);
     setNewItemName("");
     setNewItemPrice("");
+    setShowAddItem(false);
     
     toast({
       title: "Item added",
@@ -283,7 +337,6 @@ export default function AdjustSplit() {
       return;
     }
 
-    // Calculate totals to check for excess contributions
     const totals = calculateTotals();
     const totalExtraContributions = totals.reduce((sum, t) => sum + t.extraContribution, 0);
     const recipientBaseTotals = totals
@@ -343,42 +396,106 @@ export default function AdjustSplit() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </Link>
-        <h1 className="text-xl font-semibold">Adjust Split</h1>
+        <h1 className="text-xl font-semibold">Edit Contributions</h1>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Adjusting Split: {code}</h2>
+        {/* Step Guide */}
+        <Card className="p-4 bg-muted/50">
+          <div className="flex items-center justify-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">1</span>
+              <span className="hidden sm:inline">Add people</span>
+            </div>
+            <div className="w-8 h-px bg-border" />
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">2</span>
+              <span className="hidden sm:inline">Assign items</span>
+            </div>
+            <div className="w-8 h-px bg-border" />
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-muted-foreground/30 text-muted-foreground flex items-center justify-center text-xs font-medium">3</span>
+              <span className="hidden sm:inline">Save</span>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
           <p className="text-sm text-muted-foreground">
-            Edit participant names, change quantities, or add extra contributions. Changes will update this split for everyone with the link.
+            Editing split <span className="font-mono font-semibold">{code}</span>. Changes update for everyone.
           </p>
         </Card>
 
-        <div className="flex gap-2">
+        {/* Quick Actions - Add Person & Add Item */}
+        <div className="space-y-2">
           <Button
             variant="outline"
             onClick={addPerson}
-            className="flex-1 min-h-12"
+            className="w-full min-h-12"
             data-testid="button-add-person-top"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Person
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              const input = document.getElementById("new-item-name");
-              if (input) {
-                input.scrollIntoView({ behavior: "smooth", block: "center" });
-                setTimeout(() => input.focus(), 300);
-              }
-            }}
-            className="flex-1 min-h-12"
-            data-testid="button-scroll-add-item"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Item
-          </Button>
+          
+          {/* Add Item Section - Right below Add Person */}
+          <Card className="p-4">
+            <button
+              onClick={() => setShowAddItem(!showAddItem)}
+              className="w-full flex items-center justify-between text-left"
+              data-testid="button-toggle-add-item"
+            >
+              <div className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                <span className="font-medium">Add Item</span>
+              </div>
+              {showAddItem ? (
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
+            </button>
+            
+            {showAddItem && (
+              <div className="mt-4 space-y-3 pt-4 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Add items that weren't on the original bill
+                </p>
+                <div>
+                  <Label htmlFor="new-item-name">Item Name</Label>
+                  <Input
+                    id="new-item-name"
+                    value={newItemName}
+                    onChange={(e) => setNewItemName(e.target.value)}
+                    placeholder="e.g., Side Salad"
+                    data-testid="input-new-item-name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new-item-price">Price ({currency})</Label>
+                  <Input
+                    id="new-item-price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newItemPrice}
+                    onChange={(e) => setNewItemPrice(e.target.value)}
+                    placeholder="0.00"
+                    data-testid="input-new-item-price"
+                  />
+                </div>
+                <Button
+                  onClick={addItem}
+                  variant="secondary"
+                  className="w-full"
+                  data-testid="button-add-item"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add to Bill
+                </Button>
+              </div>
+            )}
+          </Card>
         </div>
 
         {people.map((person, personIndex) => {
@@ -497,47 +614,6 @@ export default function AdjustSplit() {
           );
         })}
 
-        <Card id="add-item-card" className="p-6">
-          <h3 className="font-semibold mb-2">Add New Item</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Add items that weren't on the original bill (like a side dish someone forgot)
-          </p>
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="new-item-name">Item Name</Label>
-              <Input
-                id="new-item-name"
-                value={newItemName}
-                onChange={(e) => setNewItemName(e.target.value)}
-                placeholder="e.g., Side Salad"
-                data-testid="input-new-item-name"
-              />
-            </div>
-            <div>
-              <Label htmlFor="new-item-price">Price ({currency})</Label>
-              <Input
-                id="new-item-price"
-                type="number"
-                min="0"
-                step="0.01"
-                value={newItemPrice}
-                onChange={(e) => setNewItemPrice(e.target.value)}
-                placeholder="0.00"
-                data-testid="input-new-item-price"
-              />
-            </div>
-            <Button
-              onClick={addItem}
-              variant="outline"
-              className="w-full"
-              data-testid="button-add-item"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Item to Bill
-            </Button>
-          </div>
-        </Card>
-
         <Card className="p-6 bg-primary/5">
           <div className="flex justify-between items-center">
             <span className="text-lg font-semibold">Grand Total</span>
@@ -550,7 +626,7 @@ export default function AdjustSplit() {
         <Button
           onClick={handleSave}
           disabled={saveMutation.isPending}
-          className="w-full"
+          className="w-full min-h-12"
           data-testid="button-save"
         >
           <Save className="h-4 w-4 mr-2" />

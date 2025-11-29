@@ -1,20 +1,30 @@
-import { useRoute, Link } from "wouter";
-import { ArrowLeft, Copy, Check, UserPlus, Link as LinkIcon, Share2, CheckCircle2, XCircle } from "lucide-react";
+import { useRoute, Link, useLocation } from "wouter";
+import { ArrowLeft, Copy, Check, UserPlus, Link as LinkIcon, Share2, CheckCircle2, XCircle, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { setSplitStatus, getSplitStatus } from "@/lib/split-status";
 
 export default function ViewSplit() {
   const [, params] = useRoute("/split/:code");
   const code = params?.code?.toUpperCase() || "";
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [copied, setCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [splitStatus, setSplitStatusState] = useState<"open" | "closed">("open");
+  const [userName, setUserName] = useState("");
+  const previousTotalsRef = useRef<Array<{ person: { id: string; name: string }; total: number }> | null>(null);
+  
+  // Load saved user name from localStorage
+  useEffect(() => {
+    const savedName = localStorage.getItem("easysplit-user-name") || "";
+    setUserName(savedName);
+  }, []);
   
   // Load split status when code changes
   useEffect(() => {
@@ -24,7 +34,7 @@ export default function ViewSplit() {
     }
   }, [code]);
 
-  const { data, isLoading } = useQuery<{
+  const { data, isLoading, isFetching } = useQuery<{
     code: string;
     name?: string | null;
     menuCode: string | null;
@@ -46,21 +56,87 @@ export default function ViewSplit() {
     queryKey: [`/api/splits/${code}`],
     enabled: code.length >= 6 && code.length <= 8,
     retry: false,
-    refetchInterval: 5000, // Auto-refresh every 5 seconds for real-time updates
-    refetchIntervalInBackground: false, // Only refresh when tab is active
+    refetchInterval: 5000,
+    refetchIntervalInBackground: false,
   });
   
+  // Store previous totals to avoid showing zeros during refresh
+  useEffect(() => {
+    if (data?.totals && data.totals.length > 0) {
+      const hasAnyNonZeroSubtotal = data.totals.some((t: any) => t.subtotal > 0);
+      const cacheIsEmpty = !previousTotalsRef.current || previousTotalsRef.current.length === 0;
+      
+      // Check if there are any assigned items (quantities with count > 0)
+      const hasAssignedItems = data.quantities?.some((q) => q.quantity > 0) ?? false;
+      
+      // All subtotals being zero is legitimate when:
+      // - No items are assigned to anyone (hasAssignedItems is false)
+      // In this case, zeros are the real state, not a recalculation artifact
+      const isLegitimateZeroState = !hasAnyNonZeroSubtotal && !hasAssignedItems;
+      
+      // Accept the update if:
+      // 1. Cache is empty (first load)
+      // 2. Payload has any non-zero subtotals (real data with values)
+      // 3. Legitimate zero state (no items assigned, zeros are real)
+      if (cacheIsEmpty || hasAnyNonZeroSubtotal || isLegitimateZeroState) {
+        previousTotalsRef.current = data.totals;
+      }
+    }
+  }, [data?.totals, data?.quantities]);
+  
+  // Always use cached totals to avoid showing zeros during recalculation
+  // Only fall back to current data when cache is empty
+  const displayTotals = previousTotalsRef.current && previousTotalsRef.current.length > 0
+    ? previousTotalsRef.current
+    : (data?.totals || []);
+
+  // Check if user's name already exists in the split
+  const userNameLower = userName.toLowerCase().trim();
+  const existingPerson = data?.people.find(
+    p => p.name.toLowerCase().trim() === userNameLower
+  );
+  const isUserInSplit = !!existingPerson && userName.trim().length > 0;
+  
+  // Navigate to adjust page - passes name via sessionStorage for new users
+  const handleAddYoursClick = () => {
+    if (!userName.trim()) {
+      toast({
+        title: "Enter your name",
+        description: "Please enter your name first",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Save user name to localStorage for future use
+    localStorage.setItem("easysplit-user-name", userName.trim());
+    
+    if (isUserInSplit && existingPerson) {
+      // Pass existing person's ID so adjust page can scroll to their section
+      sessionStorage.setItem("easysplit-focus-person-id", existingPerson.id);
+    } else {
+      // Pass new person's name so adjust page can create them
+      sessionStorage.setItem("easysplit-add-person-name", userName.trim());
+    }
+    
+    navigate(`/adjust-split/${code}`);
+  };
+  
+  const handleNameSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleAddYoursClick();
+  };
 
   const copyBreakdown = async () => {
-    if (!data) return;
+    if (!data || displayTotals.length === 0) return;
 
     let text = "Bill Split Breakdown\n";
     text += "=".repeat(30) + "\n\n";
 
-    data.totals.forEach((t) => {
+    // Use displayTotals (cached) to avoid copying zeros during recalculation
+    displayTotals.forEach((t: any) => {
       text += `${t.person.name}\n`;
       
-      // Add itemized list
       const personItems = data.quantities
         .filter((q) => q.personId === t.person.id)
         .map((q) => {
@@ -77,17 +153,21 @@ export default function ViewSplit() {
         text += `  ---\n`;
       }
       
-      text += `  Subtotal: ${data.currency}${t.subtotal.toFixed(2)}\n`;
-      if (t.service > 0) {
-        text += `  Service (${data.serviceCharge}%): ${data.currency}${t.service.toFixed(2)}\n`;
+      const subtotal = t.subtotal ?? 0;
+      const service = t.service ?? 0;
+      const tip = t.tip ?? 0;
+      
+      text += `  Subtotal: ${data.currency}${subtotal.toFixed(2)}\n`;
+      if (service > 0) {
+        text += `  Service (${data.serviceCharge}%): ${data.currency}${service.toFixed(2)}\n`;
       }
-      if (t.tip > 0) {
-        text += `  Tip (${data.tipPercent}%): ${data.currency}${t.tip.toFixed(2)}\n`;
+      if (tip > 0) {
+        text += `  Tip (${data.tipPercent}%): ${data.currency}${tip.toFixed(2)}\n`;
       }
       text += `  Total: ${data.currency}${t.total.toFixed(2)}\n\n`;
     });
 
-    const grandTotal = data.totals.reduce((sum, t) => sum + t.total, 0);
+    const grandTotal = displayTotals.reduce((sum: number, t: any) => sum + t.total, 0);
     text += "=".repeat(30) + "\n";
     text += `Grand Total: ${data.currency}${grandTotal.toFixed(2)}\n`;
     
@@ -192,7 +272,7 @@ export default function ViewSplit() {
     );
   }
 
-  const grandTotal = data.totals.reduce((sum, t) => sum + t.total, 0);
+  const grandTotal = displayTotals.reduce((sum, t) => sum + t.total, 0);
 
   return (
     <div className="min-h-screen bg-background pb-32">
@@ -204,8 +284,8 @@ export default function ViewSplit() {
         </Link>
         <h1 className="text-xl font-semibold flex-1">Bill Split</h1>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="indicator-live">
-          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <span>Live</span>
+          <span className={`w-2 h-2 rounded-full ${isFetching ? 'bg-yellow-500' : 'bg-green-500'} animate-pulse`} />
+          <span>{isFetching ? 'Updating...' : 'Live'}</span>
         </div>
       </header>
 
@@ -216,6 +296,53 @@ export default function ViewSplit() {
             <p className="text-sm text-muted-foreground mt-1">Split #{data.code}</p>
           </div>
         )}
+        
+        {/* Quick Add Section */}
+        <Card className="p-4 bg-primary/5">
+          <form onSubmit={handleNameSubmit} className="space-y-3">
+            <div>
+              <label htmlFor="user-name" className="text-sm font-medium">
+                Your name
+              </label>
+              <Input
+                id="user-name"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                placeholder="Enter your name"
+                className="mt-1"
+                data-testid="input-user-name"
+              />
+            </div>
+            
+            {userName.trim() && (
+              <p className="text-sm text-muted-foreground" data-testid="text-user-status">
+                {isUserInSplit 
+                  ? `You're already in this split as "${existingPerson?.name}"`
+                  : "You're not in this split yet"}
+              </p>
+            )}
+            
+            <Button
+              type="button"
+              onClick={handleAddYoursClick}
+              disabled={!userName.trim()}
+              className="w-full min-h-12"
+              data-testid="button-add-yours"
+            >
+              {isUserInSplit ? (
+                <>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Contributions
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Yours
+                </>
+              )}
+            </Button>
+          </form>
+        </Card>
         
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">Split Details</h2>
@@ -239,7 +366,7 @@ export default function ViewSplit() {
           </div>
         </Card>
 
-        {data.totals.map((personTotal) => {
+        {displayTotals.map((personTotal) => {
           const personItems = data.quantities
             .filter((q) => q.personId === personTotal.person.id)
             .map((q) => {
@@ -250,6 +377,12 @@ export default function ViewSplit() {
               };
             })
             .filter((q) => q.item);
+          
+          // Use displayTotals for all monetary values (cached to avoid showing zeros)
+          const fullTotal = displayTotals.find(t => t.person.id === personTotal.person.id);
+          const subtotal = (fullTotal as any)?.subtotal ?? personTotal.total;
+          const service = (fullTotal as any)?.service ?? 0;
+          const tip = (fullTotal as any)?.tip ?? 0;
 
           return (
             <Card key={personTotal.person.id} className="p-6" data-testid={`card-person-${personTotal.person.id}`}>
@@ -276,19 +409,19 @@ export default function ViewSplit() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span data-testid={`text-subtotal-${personTotal.person.id}`}>
-                    {data.currency}{personTotal.subtotal.toFixed(2)}
+                    {data.currency}{subtotal.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Service ({data.serviceCharge}%)</span>
                   <span data-testid={`text-service-${personTotal.person.id}`}>
-                    {data.currency}{personTotal.service.toFixed(2)}
+                    {data.currency}{service.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Tip ({data.tipPercent}%)</span>
                   <span data-testid={`text-tip-${personTotal.person.id}`}>
-                    {data.currency}{personTotal.tip.toFixed(2)}
+                    {data.currency}{tip.toFixed(2)}
                   </span>
                 </div>
                 <div className="border-t pt-2 mt-2">
@@ -358,12 +491,6 @@ export default function ViewSplit() {
             <Copy className="h-4 w-4 mr-2" />
             Copy
           </Button>
-          <Link href={`/adjust-split/${code}`} className="flex-1">
-            <Button variant="default" className="w-full" data-testid="button-adjust-split">
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add Yours
-            </Button>
-          </Link>
           <Button
             onClick={toggleSplitStatus}
             variant={splitStatus === "open" ? "destructive" : "default"}

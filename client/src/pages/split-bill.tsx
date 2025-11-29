@@ -353,6 +353,31 @@ const handleCalculate = () => {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        {/* Step Guide */}
+        <Card className="p-4 bg-muted/50">
+          <div className="flex items-center justify-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">1</span>
+              <span className="hidden sm:inline">Add items</span>
+            </div>
+            <div className="w-8 h-px bg-border" />
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">2</span>
+              <span className="hidden sm:inline">Add people</span>
+            </div>
+            <div className="w-8 h-px bg-border" />
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">3</span>
+              <span className="hidden sm:inline">Assign items</span>
+            </div>
+            <div className="w-8 h-px bg-border" />
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-muted-foreground/30 text-muted-foreground flex items-center justify-center text-xs font-medium">4</span>
+              <span className="hidden sm:inline">Calculate</span>
+            </div>
+          </div>
+        </Card>
+
         <Card className="p-6">
           <Label htmlFor="split-name" className="text-sm mb-2 block">
             Split Name <span className="text-muted-foreground">(optional)</span>
