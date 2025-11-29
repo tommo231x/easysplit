@@ -1,0 +1,139 @@
+I’m working on a project called EasySplit. The repo is already open in this Repl. Please do the following changes for me without breaking the existing React app or Firebase setup.
+
+Project context (important):
+
+The frontend is a React/Vite app inside the client/ folder.
+
+The backend is Express in server/.
+
+Firebase Hosting is already configured via firebase.json in the project root.
+
+Do not delete or move any existing files related to client/, server/, or the build process.
+
+1. Create a dedicated landing page for “Under Construction”
+
+Create a new folder in the project root called: landing
+
+Inside landing/, create a file: index.html
+
+Build a standalone HTML page (no React, no JS build step) that:
+
+Uses modern, clean styling with embedded <style> in the <head>.
+
+Centers a card or hero in the middle of the screen.
+
+Has the product name: EasySplit.
+
+Has a short tagline like: “Split the bill without the drama.”
+
+Includes a nice short description of what the app does, for example:
+
+EasySplit lets you share one simple link for a group bill.
+
+People tap the link, select their items from the menu, and the app calculates a fair split automatically.
+
+It’s designed for restaurant bills, takeaway, or any shared cost.
+
+Add 3–4 bullet points or short lines that highlight benefits like:
+
+No awkward math at the table
+
+Everyone pays only for what they had
+
+Works from a simple shared link
+
+Designed for groups, dates, and friends
+
+At the bottom of the page, add a small footer line that says:
+“Web app by FinaFeels”
+(make “FinaFeels” styled a little like a brand name – maybe lighter colour or small caps).
+
+Make sure the page looks good on both desktop and mobile:
+
+Use responsive layout
+
+Comfortable padding
+
+A simple, modern font (system font is fine)
+
+Slightly dark or muted background with a card in the middle.
+
+You can write all the CSS directly in a <style> block in index.html.
+
+2. Set up two Firebase Hosting config files (landing vs real app)
+
+Right now there is a firebase.json in the root. I want to use two different config files so I can deploy either:
+
+an Under Construction landing page, or
+
+the real built app,
+
+without editing the config every time.
+
+Please:
+
+Look at the current firebase.json and see how Hosting is configured now (especially the hosting section, public value, and rewrites).
+
+Create two new config files in the project root:
+
+firebase.landing.json
+
+firebase.live.json
+
+In firebase.landing.json, configure Hosting so that:
+
+The hosting.public directory is "landing".
+
+No special rewrites are necessary beyond just serving landing/index.html as the root.
+
+The structure should look like:
+
+{
+  "hosting": {
+    "public": "landing"
+  }
+}
+
+
+If there are other non-hosting parts in the original firebase.json that are required (like emulators or similar), include them too so nothing important is lost.
+
+In firebase.live.json, configure Hosting to serve the real built app:
+
+Set hosting.public back to whatever was used for the built React app before (most likely "dist/public").
+
+Preserve the existing SPA rewrite rule so that all routes point to /index.html (for the React router). For example:
+
+{
+  "hosting": {
+    "public": "dist/public",
+    "rewrites": [
+      { "source": "**", "destination": "/index.html" }
+    ]
+  }
+}
+
+
+Again, if there are any additional top-level fields in the original firebase.json (emulators, etc.), copy them into both config files as appropriate.
+
+Leave the existing firebase.json in place but update it to match one of these configs (you can default it to the landing version if you want). The key thing is:
+
+I can deploy the landing page with:
+firebase deploy --config firebase.landing.json --only hosting
+
+I can deploy the real app with:
+firebase deploy --config firebase.live.json --only hosting
+
+Please show me the final contents of:
+
+landing/index.html
+
+firebase.landing.json
+
+firebase.live.json
+
+and firebase.json (if you change it),
+so I can verify they look correct.
+
+Do not remove or change anything in client/ or server/ except if it’s absolutely necessary, and don’t break the existing build scripts. I still need to be able to build the React app from client/ and host it using the live Firebase config later.
+
+That’s everything – please apply these changes now.
