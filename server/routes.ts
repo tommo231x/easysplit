@@ -41,7 +41,7 @@ const codeRetrievalLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
   message: { error: "Too many requests, please try again later" },
-});
+}) as any;
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint

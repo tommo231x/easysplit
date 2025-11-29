@@ -1,29 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
-import path from "path";
-import { fileURLToPath } from "url";
-
-// For ES modules, we need to define __dirname manually
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Dynamic imports for development vs production
-let setupVite: any;
-let serveStatic: any;
-let log: any;
-
-try {
-  const viteModule = await import("./vite.js");
-  setupVite = viteModule.setupVite;
-  serveStatic = viteModule.serveStatic;
-  log = viteModule.log;
-} catch {
-  // Fallback for production when vite.ts doesn't exist
-  setupVite = undefined;
-  serveStatic = undefined;
-  log = (msg: string) => console.log(`[express] ${msg}`);
-}
 
 const app = express();
 
@@ -35,6 +12,7 @@ declare module 'http' {
     rawBody: unknown
   }
 }
+
 app.use(express.json({
   verify: (req, _res, buf) => {
     req.rawBody = buf;
@@ -42,6 +20,7 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
+// Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -65,44 +44,31 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      log(logLine);
+      console.log(`[express] ${logLine}`);
     }
   });
 
   next();
 });
 
-(async () => {
-  const server = await registerRoutes(app);
+// Register API routes
+const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+// Error handling middleware
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
-  });
+  res.status(status).json({ message });
+  throw err;
+});
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development" && setupVite) {
-    await setupVite(app, server);
-  } else if (serveStatic) {
-    serveStatic(app);
-  }
-  // In production without vite, just serve API endpoints
-
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
-})();
+// Start server on PORT environment variable (default 5000)
+const port = parseInt(process.env.PORT || "5000", 10);
+server.listen({
+  port,
+  host: "0.0.0.0",
+  reusePort: true,
+}, () => {
+  console.log(`[express] serving on port ${port}`);
+});
