@@ -1,0 +1,68 @@
+2025-11-29T03:56:34.96591265Z ==> Cloning from https://github.com/tommo231x/easysplit
+2025-11-29T03:56:35.761841969Z ==> Checking out commit 6b97c685ac9de807598c6252516601c4b40093f3 in branch main
+2025-11-29T03:56:37.035517093Z ==> Using Node.js version 22.16.0 (default)
+2025-11-29T03:56:37.082693279Z ==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+2025-11-29T03:56:39.889418427Z ==> Running build command 'npm install; npm run build'...
+2025-11-29T03:58:31.743111248Z 
+2025-11-29T03:58:31.743152779Z added 125 packages, and audited 126 packages in 2m
+2025-11-29T03:58:31.743357345Z 
+2025-11-29T03:58:31.74426664Z 24 packages are looking for funding
+2025-11-29T03:58:31.74427898Z   run `npm fund` for details
+2025-11-29T03:58:31.748484046Z 
+2025-11-29T03:58:31.748504227Z found 0 vulnerabilities
+2025-11-29T03:58:32.037353336Z 
+2025-11-29T03:58:32.037392527Z > easysplit-backend@1.0.0 build
+2025-11-29T03:58:32.037398597Z > tsc
+2025-11-29T03:58:32.037403847Z 
+2025-11-29T03:58:36.936438172Z ==> Uploading build...
+2025-11-29T03:58:44.136467045Z ==> Deploying...
+2025-11-29T03:58:42.416430226Z ==> Uploaded in 3.8s. Compression took 1.7s
+2025-11-29T03:58:42.445590939Z ==> Build successful 🎉
+2025-11-29T03:58:57.310591069Z ==> Exited with status 1
+2025-11-29T03:58:57.330261297Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+2025-11-29T03:58:56.27835631Z ==> Running 'npm run start'
+2025-11-29T03:58:56.566457267Z 
+2025-11-29T03:58:56.566480987Z > easysplit-backend@1.0.0 start
+2025-11-29T03:58:56.566485627Z > node dist/index.js
+2025-11-29T03:58:56.566488047Z 
+2025-11-29T03:58:56.64985119Z node:internal/modules/esm/resolve:275
+2025-11-29T03:58:56.649871491Z     throw new ERR_MODULE_NOT_FOUND(
+2025-11-29T03:58:56.649874531Z           ^
+2025-11-29T03:58:56.649876671Z 
+2025-11-29T03:58:56.649879841Z Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/opt/render/project/src/server/dist/routes' imported from /opt/render/project/src/server/dist/index.js
+2025-11-29T03:58:56.649884691Z     at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+2025-11-29T03:58:56.649888161Z     at moduleResolve (node:internal/modules/esm/resolve:860:10)
+2025-11-29T03:58:56.649890311Z     at defaultResolve (node:internal/modules/esm/resolve:984:11)
+2025-11-29T03:58:56.649892411Z     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:780:12)
+2025-11-29T03:58:56.649894651Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:704:25)
+2025-11-29T03:58:56.649896771Z     at ModuleLoader.resolve (node:internal/modules/esm/loader:687:38)
+2025-11-29T03:58:56.649899681Z     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:305:38)
+2025-11-29T03:58:56.649901951Z     at ModuleJob._link (node:internal/modules/esm/module_job:137:49) {
+2025-11-29T03:58:56.649904861Z   code: 'ERR_MODULE_NOT_FOUND',
+2025-11-29T03:58:56.649907321Z   url: 'file:///opt/render/project/src/server/dist/routes'
+2025-11-29T03:58:56.649909531Z }
+2025-11-29T03:58:56.649911601Z 
+2025-11-29T03:58:56.649913821Z Node.js v22.16.0
+2025-11-29T03:58:58.572884038Z ==> Running 'npm run start'
+2025-11-29T03:58:58.864664262Z 
+2025-11-29T03:58:58.864697232Z > easysplit-backend@1.0.0 start
+2025-11-29T03:58:58.864702722Z > node dist/index.js
+2025-11-29T03:58:58.864704982Z 
+2025-11-29T03:58:58.958155227Z node:internal/modules/esm/resolve:275
+2025-11-29T03:58:58.958175087Z     throw new ERR_MODULE_NOT_FOUND(
+2025-11-29T03:58:58.958178027Z           ^
+2025-11-29T03:58:58.958180118Z 
+2025-11-29T03:58:58.958182968Z Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/opt/render/project/src/server/dist/routes' imported from /opt/render/project/src/server/dist/index.js
+2025-11-29T03:58:58.958188918Z     at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+2025-11-29T03:58:58.958192148Z     at moduleResolve (node:internal/modules/esm/resolve:860:10)
+2025-11-29T03:58:58.958194788Z     at defaultResolve (node:internal/modules/esm/resolve:984:11)
+2025-11-29T03:58:58.958197688Z     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:780:12)
+2025-11-29T03:58:58.958200008Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:704:25)
+2025-11-29T03:58:58.958202218Z     at ModuleLoader.resolve (node:internal/modules/esm/loader:687:38)
+2025-11-29T03:58:58.958204938Z     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:305:38)
+2025-11-29T03:58:58.958207278Z     at ModuleJob._link (node:internal/modules/esm/module_job:137:49) {
+2025-11-29T03:58:58.958223359Z   code: 'ERR_MODULE_NOT_FOUND',
+2025-11-29T03:58:58.958251579Z   url: 'file:///opt/render/project/src/server/dist/routes'
+2025-11-29T03:58:58.958254469Z }
+2025-11-29T03:58:58.958256479Z 
+2025-11-29T03:58:58.958258679Z Node.js v22.16.0

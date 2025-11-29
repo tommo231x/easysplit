@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { randomBytes } from "crypto";
 import path from "path";
-import type { Menu, MenuItem, InsertMenu, InsertMenuItem, BillSplit, InsertBillSplit } from "@shared/schema";
+import type { Menu, MenuItem, InsertMenu, InsertMenuItem, BillSplit, InsertBillSplit } from "./shared/schema.js";
 
 class DatabaseHelper {
   private db: Database.Database;

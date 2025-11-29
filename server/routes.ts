@@ -1,9 +1,9 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { db } from "./db";
+import { db } from "./db.js";
 import { z } from "zod";
-import { insertBillSplitSchema } from "@shared/schema";
-import type { InsertBillSplit } from "@shared/schema";
+import { insertBillSplitSchema } from "./shared/schema.js";
+import type { InsertBillSplit } from "./shared/schema.js";
 import rateLimit from "express-rate-limit";
 
 const insertMenuItemSchema = z.object({
