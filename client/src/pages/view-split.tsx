@@ -9,6 +9,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
 import { setSplitStatus, getSplitStatus } from "@/lib/split-status";
+import { logAnalyticsEvent, AnalyticsEvents } from "@/lib/analytics";
 
 export default function ViewSplit() {
   const [, params] = useRoute("/split/:code");
@@ -35,6 +36,13 @@ export default function ViewSplit() {
     if (code) {
       const status = getSplitStatus(code);
       setSplitStatusState(status);
+    }
+  }, [code]);
+  
+  // Track shared link visit
+  useEffect(() => {
+    if (code) {
+      logAnalyticsEvent(AnalyticsEvents.SHARED_LINK_VISITED);
     }
   }, [code]);
 
@@ -201,6 +209,7 @@ export default function ViewSplit() {
       await navigator.clipboard.writeText(url);
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
+      logAnalyticsEvent(AnalyticsEvents.LINK_COPIED);
       toast({
         title: "Link copied!",
         description: "Share link copied to clipboard",
@@ -217,6 +226,7 @@ export default function ViewSplit() {
   const shareLink = async () => {
     const url = window.location.href;
     const title = data?.name || "Bill Split";
+    logAnalyticsEvent(AnalyticsEvents.SHARE_OPENED);
     
     try {
       if (navigator.share) {

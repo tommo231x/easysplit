@@ -11,6 +11,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { MenuItem, Person, ItemQuantity, PersonTotal } from "@shared/schema";
 import { setSplitStatus, getSplitStatus } from "@/lib/split-status";
+import { logAnalyticsEvent, AnalyticsEvents } from "@/lib/analytics";
 
 interface ResultsState {
   items: MenuItem[];
@@ -134,6 +135,8 @@ export default function Results() {
       setSplitStatus(data.code, "open");
       setSplitStatusState("open");
       
+      logAnalyticsEvent(AnalyticsEvents.SPLIT_CREATED);
+      
       toast({
         title: "Split saved!",
         description: "Your bill split has been saved and can be shared",
@@ -240,6 +243,7 @@ export default function Results() {
       await navigator.clipboard.writeText(url);
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
+      logAnalyticsEvent(AnalyticsEvents.LINK_COPIED);
       toast({
         title: "Link copied!",
         description: "Share link copied to clipboard",
@@ -257,6 +261,7 @@ export default function Results() {
     if (!splitCode) return;
     
     const url = `${window.location.origin}/split/${splitCode}`;
+    logAnalyticsEvent(AnalyticsEvents.SHARE_OPENED);
     
     try {
       if (navigator.share) {
@@ -269,6 +274,7 @@ export default function Results() {
         await navigator.clipboard.writeText(url);
         setLinkCopied(true);
         setTimeout(() => setLinkCopied(false), 2000);
+        logAnalyticsEvent(AnalyticsEvents.LINK_COPIED);
         toast({
           title: "Link copied!",
           description: "Share link copied to clipboard",

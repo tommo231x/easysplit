@@ -30,6 +30,7 @@ import { getApiUrl } from "@/lib/api";
 import type { MenuItem, Person, ItemQuantity } from "@shared/schema";
 import { nanoid } from "nanoid";
 import CurrencySelector from "@/components/currency-selector";
+import { logAnalyticsEvent, AnalyticsEvents } from "@/lib/analytics";
 
 export default function SplitBill() {
   const [, setLocation] = useLocation();
@@ -157,6 +158,7 @@ export default function SplitBill() {
     };
     setManualItems([...manualItems, newItem]);
     setLoadedMenu(null);
+    logAnalyticsEvent(AnalyticsEvents.ITEM_ADDED);
   };
 
   const updateManualItem = (id: number, field: "name" | "price", value: string | number) => {
@@ -169,6 +171,7 @@ export default function SplitBill() {
 
   const removeManualItem = (id: number) => {
     setManualItems(manualItems.filter((item) => item.id !== id));
+    logAnalyticsEvent(AnalyticsEvents.ITEM_REMOVED);
   };
 
   const addPerson = () => {
@@ -239,6 +242,8 @@ export default function SplitBill() {
     setServiceCharge(12.5);
     setTipPercent(0);
     setSplitName("");
+    
+    logAnalyticsEvent(AnalyticsEvents.SPLIT_CREATED);
     
     toast({
       title: "New split started",
