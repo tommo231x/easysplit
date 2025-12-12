@@ -34,7 +34,13 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <Router />
+        <div className="min-h-screen bg-background font-sans antialiased relative overflow-hidden">
+          {/* Ambient Background Glow */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/20 blur-[120px] rounded-full pointer-events-none -z-10 mix-blend-screen" />
+          <div className="absolute bottom-0 right-0 w-[600px] h-[500px] bg-secondary/10 blur-[100px] rounded-full pointer-events-none -z-10" />
+
+          <Router />
+        </div>
       </TooltipProvider>
     </QueryClientProvider>
   );

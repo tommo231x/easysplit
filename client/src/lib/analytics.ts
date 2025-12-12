@@ -25,4 +25,9 @@ export const AnalyticsEvents = {
   SHARE_OPENED: "share_opened",
   LINK_COPIED: "link_copied",
   SHARED_LINK_VISITED: "shared_link_visited",
+  // New events
+  ITEM_ADDED_MANUALLY: "item_added_manually",
+  PERSON_ADDED: "person_added",
+  MENU_LOADED: "menu_loaded",
+  CALCULATE_SPLIT: "calculate_split",
 } as const;

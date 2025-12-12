@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, Copy, Check, Share2, Edit, UserPlus, Link as LinkIcon, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, Copy, Check, Share2, Edit, UserPlus, Link as LinkIcon, CheckCircle2, XCircle, MoreVertical, FileText } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { MenuItem, Person, ItemQuantity, PersonTotal } from "@shared/schema";
 import { setSplitStatus, getSplitStatus } from "@/lib/split-status";
 import { logAnalyticsEvent, AnalyticsEvents } from "@/lib/analytics";
+import { Drawer } from "vaul";
 
 interface ResultsState {
   items: MenuItem[];
@@ -25,6 +26,16 @@ interface ResultsState {
   persistedTotals?: PersonTotal[];
 }
 
+// Helper for Quantity Display
+// User Request: "Hide the logic" - only show explicit multiples
+function formatQuantity(q: number): string {
+  if (q > 1.01) {
+    // Show integers or significant multiples (e.g. 2x, 1.5x)
+    return `${parseFloat(q.toFixed(2))}x`;
+  }
+  return "";
+}
+
 export default function Results() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -34,9 +45,10 @@ export default function Results() {
   const [splitCode, setSplitCode] = useState<string | null>(null);
   const [splitName, setSplitName] = useState<string>("");
   const [splitStatus, setSplitStatusState] = useState<"open" | "closed">("open");
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   const savedSplitCode = sessionStorage.getItem("easysplit-split-code");
-  
+
   // If there's a saved split code but no state, fetch the split from API
   const { data: savedSplit } = useQuery<{
     code: string;
@@ -67,14 +79,14 @@ export default function Results() {
       }
       sessionStorage.removeItem("easysplit-results");
     }
-    
+
     // Restore saved split code if it exists
     const savedCode = sessionStorage.getItem("easysplit-split-code");
     if (savedCode) {
       setSplitCode(savedCode);
     }
   }, []);
-  
+
   // If we loaded a saved split, populate state from it
   useEffect(() => {
     if (savedSplit && !state) {
@@ -91,7 +103,7 @@ export default function Results() {
       setSplitName(savedSplit.name || "");
     }
   }, [savedSplit, state]);
-  
+
   // Load split status when code changes
   useEffect(() => {
     if (splitCode) {
@@ -118,29 +130,33 @@ export default function Results() {
     onSuccess: (data) => {
       setSplitCode(data.code);
       sessionStorage.setItem("easysplit-split-code", data.code);
-      
+
       // Track this split in localStorage
       const savedSplits = JSON.parse(localStorage.getItem("easysplit-my-splits") || "[]");
       if (!savedSplits.includes(data.code)) {
-        savedSplits.unshift(data.code);
-        localStorage.setItem("easysplit-my-splits", JSON.stringify(savedSplits));
-        
+        // Prepend and cap at 50
+        const newHistory = [data.code, ...savedSplits].slice(0, 50);
+        localStorage.setItem("easysplit-my-splits", JSON.stringify(newHistory));
+
         // Invalidate My Splits query so it updates if the page is open
         queryClient.invalidateQueries({
           queryKey: ['/api/splits/batch']
         });
       }
-      
+
       // Mark split as open
       setSplitStatus(data.code, "open");
       setSplitStatusState("open");
-      
+
       logAnalyticsEvent(AnalyticsEvents.SPLIT_CREATED);
-      
+
       toast({
         title: "Split saved!",
         description: "Your bill split has been saved and can be shared",
       });
+
+      // Open share drawer automatically
+      setIsShareOpen(true);
     },
     onError: (error: Error) => {
       console.error("[Save Split Error]", error.message);
@@ -173,7 +189,7 @@ export default function Results() {
     if (persistedTotals) {
       return persistedTotals;
     }
-    
+
     return people.map((person) => {
       let subtotal = 0;
 
@@ -221,24 +237,24 @@ export default function Results() {
 
   const toggleSplitStatus = () => {
     if (!splitCode) return;
-    
+
     const newStatus = splitStatus === "open" ? "closed" : "open";
     setSplitStatus(splitCode, newStatus);
     setSplitStatusState(newStatus);
-    
+
     toast({
       title: newStatus === "closed" ? "Split closed" : "Split reopened",
-      description: newStatus === "closed" 
-        ? "This split is marked as finished" 
+      description: newStatus === "closed"
+        ? "This split is marked as finished"
         : "This split is now active again",
     });
   };
 
   const copyLink = async () => {
     if (!splitCode) return;
-    
+
     const url = `${window.location.origin}/split/${splitCode}`;
-    
+
     try {
       await navigator.clipboard.writeText(url);
       setLinkCopied(true);
@@ -259,10 +275,10 @@ export default function Results() {
 
   const shareLink = async () => {
     if (!splitCode) return;
-    
+
     const url = `${window.location.origin}/split/${splitCode}`;
     logAnalyticsEvent(AnalyticsEvents.SHARE_OPENED);
-    
+
     try {
       if (navigator.share) {
         await navigator.share({
@@ -291,7 +307,7 @@ export default function Results() {
 
     totals.forEach((t) => {
       text += `${t.person.name}\n`;
-      
+
       // Add itemized list
       const personItems = quantities
         .filter((q) => q.personId === t.person.id)
@@ -300,15 +316,15 @@ export default function Results() {
           return { ...q, item: item! };
         })
         .filter((q) => q.item);
-      
+
       personItems.forEach((pItem) => {
         text += `  ${pItem.quantity}x ${pItem.item.name} - ${currency}${(pItem.item.price * pItem.quantity).toFixed(2)}\n`;
       });
-      
+
       if (personItems.length > 0) {
         text += `  ---\n`;
       }
-      
+
       text += `  Subtotal: ${currency}${t.subtotal.toFixed(2)}\n`;
       if (t.service > 0) {
         text += `  Service (${serviceCharge}%): ${currency}${t.service.toFixed(2)}\n`;
@@ -357,7 +373,7 @@ export default function Results() {
             {splitCode && <p className="text-sm text-muted-foreground mt-1">Split #{splitCode}</p>}
           </div>
         )}
-        
+
         {/* Extra Contribution Note - shown when someone has added extra money */}
         {(() => {
           const contributorsWithExtra = totals.filter((t) => (t.extraContribution ?? 0) > 0);
@@ -372,7 +388,7 @@ export default function Results() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                      {contributorNames.length === 1 
+                      {contributorNames.length === 1
                         ? `${contributorNames[0]} added ${currency}${totalExtra.toFixed(2)} extra to help cover the bill.`
                         : `${contributorNames.join(" & ")} added ${currency}${totalExtra.toFixed(2)} extra to help cover the bill.`}
                     </p>
@@ -399,7 +415,7 @@ export default function Results() {
                 };
               })
               .filter((q) => q.item);
-            
+
             const extraContribution = personTotal.extraContribution ?? 0;
             const baseTotal = personTotal.baseTotal ?? personTotal.total;
             const hasExtraContributors = totals.some((t) => (t.extraContribution ?? 0) > 0);
@@ -408,24 +424,29 @@ export default function Results() {
             return (
               <Card key={personTotal.person.id} className="p-6" data-testid={`card-person-${personTotal.person.id}`}>
                 <h3 className="text-xl font-semibold mb-4">{personTotal.person.name}</h3>
-                
+
                 {personItems.length > 0 && (
                   <div className="mb-4 space-y-1">
-                    {personItems.map((pItem, idx) => (
-                      <div key={idx} className="flex justify-between gap-2 text-sm" data-testid={`item-${personTotal.person.id}-${idx}`}>
-                        <span className="text-muted-foreground">
-                          {pItem.quantity}x {pItem.item.name}
-                        </span>
-                        <span className="font-mono">
-                          {currency}{(pItem.item.price * pItem.quantity).toFixed(2)}
-                        </span>
-                      </div>
-                    ))}
+                    {personItems.map((pItem, idx) => {
+                      const qtyLabel = formatQuantity(pItem.quantity);
+
+                      return (
+                        <div key={idx} className="flex justify-between gap-2 text-sm" data-testid={`item-${personTotal.person.id}-${idx}`}>
+                          <span className="text-muted-foreground">
+                            {qtyLabel && <span className="font-medium text-foreground mr-1">{qtyLabel}</span>}
+                            {pItem.item.name}
+                          </span>
+                          <span className="font-mono">
+                            {currency}{(pItem.item.price * pItem.quantity).toFixed(2)}
+                          </span>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
-                
+
                 <Separator className="my-3" />
-                
+
                 <div className="space-y-2 font-mono text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
@@ -434,52 +455,52 @@ export default function Results() {
                       {personTotal.subtotal.toFixed(2)}
                     </span>
                   </div>
-                {personTotal.service > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Service ({serviceCharge}%)
-                    </span>
-                    <span data-testid={`text-service-${personTotal.person.id}`}>
+                  {personTotal.service > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Service ({serviceCharge}%)
+                      </span>
+                      <span data-testid={`text-service-${personTotal.person.id}`}>
+                        {currency}
+                        {personTotal.service.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  {personTotal.tip > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Tip ({tipPercent}%)</span>
+                      <span data-testid={`text-tip-${personTotal.person.id}`}>
+                        {currency}
+                        {personTotal.tip.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  {extraContribution > 0 && (
+                    <div className="flex justify-between text-green-600 dark:text-green-400">
+                      <span>Extra Contribution</span>
+                      <span data-testid={`text-extra-${personTotal.person.id}`}>
+                        +{currency}{extraContribution.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  {reduction > 0 && (
+                    <div className="flex justify-between text-green-600 dark:text-green-400">
+                      <span>Reduction from others</span>
+                      <span data-testid={`text-reduction-${personTotal.person.id}`}>
+                        -{currency}{reduction.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  <Separator className="my-3" />
+                  <div className="flex justify-between text-base font-semibold">
+                    <span>Total</span>
+                    <span data-testid={`text-total-${personTotal.person.id}`}>
                       {currency}
-                      {personTotal.service.toFixed(2)}
+                      {personTotal.total.toFixed(2)}
                     </span>
                   </div>
-                )}
-                {personTotal.tip > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tip ({tipPercent}%)</span>
-                    <span data-testid={`text-tip-${personTotal.person.id}`}>
-                      {currency}
-                      {personTotal.tip.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                {extraContribution > 0 && (
-                  <div className="flex justify-between text-green-600 dark:text-green-400">
-                    <span>Extra Contribution</span>
-                    <span data-testid={`text-extra-${personTotal.person.id}`}>
-                      +{currency}{extraContribution.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                {reduction > 0 && (
-                  <div className="flex justify-between text-green-600 dark:text-green-400">
-                    <span>Reduction from others</span>
-                    <span data-testid={`text-reduction-${personTotal.person.id}`}>
-                      -{currency}{reduction.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                <Separator className="my-3" />
-                <div className="flex justify-between text-base font-semibold">
-                  <span>Total</span>
-                  <span data-testid={`text-total-${personTotal.person.id}`}>
-                    {currency}
-                    {personTotal.total.toFixed(2)}
-                  </span>
                 </div>
-              </div>
-            </Card>
+              </Card>
             );
           })}
         </div>
@@ -499,101 +520,105 @@ export default function Results() {
           </div>
         )}
 
-        {splitCode && (
-          <Card className="p-4 space-y-3">
-            <h3 className="font-medium text-sm">Share This Split</h3>
-            <div className="flex gap-2">
-              <Button
-                onClick={copyLink}
-                variant="outline"
-                className="flex-1 h-12"
-                data-testid="button-copy-link"
-              >
-                {linkCopied ? (
-                  <>
-                    <Check className="h-5 w-5 mr-2" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <LinkIcon className="h-5 w-5 mr-2" />
-                    Copy Link
-                  </>
-                )}
-              </Button>
-              <Button
-                onClick={shareLink}
-                variant="outline"
-                className="flex-1 h-12"
-                data-testid="button-share-link"
-              >
-                <Share2 className="h-5 w-5 mr-2" />
-                Share
-              </Button>
-            </div>
-          </Card>
-        )}
-
         <div className="flex gap-2">
-          <Button
-            onClick={copyBreakdown}
-            variant="outline"
-            className="flex-1 h-12"
-            data-testid="button-copy-breakdown"
-          >
-            {copied ? (
-              <>
-                <Check className="h-5 w-5 mr-2" />
-                Copied!
-              </>
-            ) : (
-              <>
-                <Copy className="h-5 w-5 mr-2" />
-                Copy Breakdown
-              </>
-            )}
-          </Button>
-          
           {!splitCode ? (
             <Button
               onClick={handleSaveSplit}
               disabled={saveSplitMutation.isPending}
-              className="flex-1 h-12"
+              className="flex-1 h-14 text-lg"
               data-testid="button-save-split"
             >
               <Share2 className="h-5 w-5 mr-2" />
               {saveSplitMutation.isPending ? "Saving..." : "Save & Share"}
             </Button>
           ) : (
-            <>
+            <div className="flex gap-2 w-full">
               <Button
                 onClick={() => navigate(`/adjust-split/${splitCode}`)}
-                variant="outline"
+                variant="secondary"
                 className="flex-1 h-12"
                 data-testid="button-adjust-split"
               >
                 <Edit className="h-5 w-5 mr-2" />
-                Edit Split
+                Edit
               </Button>
-              <Button
-                onClick={toggleSplitStatus}
-                variant={splitStatus === "open" ? "destructive" : "default"}
-                className="flex-1 h-12"
-                data-testid="button-toggle-status"
-              >
-                {splitStatus === "open" ? (
-                  <>
-                    <XCircle className="h-5 w-5 mr-2" />
-                    Close
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-5 w-5 mr-2" />
-                    Reopen
-                  </>
-                )}
-              </Button>
-            </>
+              <Drawer.Root open={isShareOpen} onOpenChange={setIsShareOpen}>
+                <Drawer.Trigger asChild>
+                  <Button className="flex-[2] h-12" data-testid="button-open-share">
+                    <Share2 className="h-5 w-5 mr-2" />
+                    Share Split
+                  </Button>
+                </Drawer.Trigger>
+                <Drawer.Portal>
+                  <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
+                  <Drawer.Content className="fixed bottom-0 left-0 right-0 max-h-[90vh] z-50 rounded-t-[10px] outline-none">
+                    <div className="bg-background rounded-t-[10px] p-4 max-w-md mx-auto shadow-2xl">
+                      <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-6" />
+
+                      <div className="px-4 pb-8 space-y-4">
+                        <h2 className="text-xl font-semibold text-center mb-6">Share this Split</h2>
+
+                        <Button variant="outline" className="w-full h-14 justify-start text-lg px-4" onClick={() => {
+                          copyLink();
+                          setIsShareOpen(false);
+                        }}>
+                          <LinkIcon className="h-6 w-6 mr-3" />
+                          <div className="text-left">
+                            <div className="font-semibold">Copy Link</div>
+                            <div className="text-xs text-muted-foreground font-normal">Send a direct link to your friends</div>
+                          </div>
+                        </Button>
+
+                        <Button variant="outline" className="w-full h-14 justify-start text-lg px-4" onClick={() => {
+                          copyBreakdown();
+                          setIsShareOpen(false);
+                        }}>
+                          <FileText className="h-6 w-6 mr-3" />
+                          <div className="text-left">
+                            <div className="font-semibold">Copy Text Breakdown</div>
+                            <div className="text-xs text-muted-foreground font-normal">Paste a summary into WhatsApp/SMS</div>
+                          </div>
+                        </Button>
+
+                        <Button variant="outline" className="w-full h-14 justify-start text-lg px-4" onClick={() => {
+                          shareLink();
+                          setIsShareOpen(false);
+                        }}>
+                          <Share2 className="h-6 w-6 mr-3" />
+                          <div className="text-left">
+                            <div className="font-semibold">Share via...</div>
+                            <div className="text-xs text-muted-foreground font-normal">Use system share sheet</div>
+                          </div>
+                        </Button>
+
+                        <Separator className="my-2" />
+
+                        <Button
+                          onClick={() => {
+                            toggleSplitStatus();
+                            setIsShareOpen(false);
+                          }}
+                          variant={splitStatus === "open" ? "destructive" : "default"}
+                          className="w-full h-12"
+                        >
+                          {splitStatus === "open" ? (
+                            <>
+                              <XCircle className="h-5 w-5 mr-2" />
+                              Close Split
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-5 w-5 mr-2" />
+                              Reopen Split
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </Drawer.Content>
+                </Drawer.Portal>
+              </Drawer.Root>
+            </div>
           )}
         </div>
       </main>

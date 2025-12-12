@@ -1,11 +1,12 @@
 import { Link } from "wouter";
 import { FileText, Calculator, History, Circle, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { getAllSplitStatuses, type SplitStatus } from "@/lib/split-status";
 import { useQuery } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/api";
+import { BrandLogo } from "@/components/brand-logo";
 
 export default function Home() {
   const [activeSplits, setActiveSplits] = useState<SplitStatus[]>([]);
@@ -23,11 +24,11 @@ export default function Home() {
         .sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
       setActiveSplits(openSplits);
       setClosedSplits(closed);
-      
+
       const codes = JSON.parse(localStorage.getItem("easysplit-my-splits") || "[]");
       setSavedSplitCodes(codes);
     };
-    
+
     loadStatuses();
 
     const handleStorageChange = (e: StorageEvent) => {
@@ -51,7 +52,7 @@ export default function Home() {
     queryKey: ['/api/splits/batch', savedSplitCodes],
     queryFn: async () => {
       if (savedSplitCodes.length === 0) return [];
-      
+
       const results = await Promise.all(
         savedSplitCodes.map(async (code: string) => {
           try {
@@ -63,7 +64,7 @@ export default function Home() {
           }
         })
       );
-      
+
       return results.filter((split) => split !== null);
     },
     enabled: savedSplitCodes.length > 0,
@@ -87,7 +88,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 bg-background border-b h-16 flex items-center px-4">
-        <h1 className="text-2xl font-semibold">EasySplit</h1>
+        <BrandLogo size="lg" />
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8">
@@ -98,53 +99,47 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="space-y-4">
-          <Link href="/create-menu">
-            <Button
-              variant="default"
-              className="w-full min-h-20 rounded-xl p-6 flex items-center justify-start gap-4 text-base"
-              data-testid="button-create-menu"
-            >
-              <FileText className="h-6 w-6 flex-shrink-0" />
-              <div className="text-left">
-                <div className="font-medium">Create / Upload Menu</div>
-                <div className="text-sm opacity-90">
-                  Save a menu and get a shareable code
+        <div className="grid grid-cols-2 gap-4">
+          <Link href="/split-bill" className="col-span-2">
+            <div className="group relative overflow-hidden rounded-2xl bg-primary p-8 text-primary-foreground shadow-lg transition-all hover:scale-[1.01] hover:shadow-xl cursor-pointer min-h-[180px] flex flex-col justify-between" data-testid="button-split-bill">
+              <div className="absolute top-0 right-0 p-8 opacity-10">
+                <Calculator className="h-32 w-32 rotate-12" />
+              </div>
+              <div className="relative z-10">
+                <Calculator className="h-8 w-8 mb-4 opacity-90" />
+                <h2 className="text-2xl font-bold mb-1">Split a Bill</h2>
+                <p className="opacity-90 font-medium">Start a new split instantly</p>
+              </div>
+              <div className="relative z-10 flex justify-end">
+                <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+                  <ChevronRight className="h-6 w-6" />
                 </div>
               </div>
-            </Button>
+            </div>
           </Link>
 
-          <Link href="/split-bill">
-            <Button
-              variant="secondary"
-              className="w-full min-h-20 rounded-xl p-6 flex items-center justify-start gap-4 text-base"
-              data-testid="button-split-bill"
-            >
-              <Calculator className="h-6 w-6 flex-shrink-0" />
-              <div className="text-left">
-                <div className="font-medium">Split a Bill</div>
-                <div className="text-sm opacity-90">
-                  Calculate who owes what
+          <Link href="/create-menu">
+            <Card className="h-full border-dashed border-2 bg-card/50 hover:bg-card/80 flex flex-col justify-between" data-testid="button-create-menu">
+              <CardContent className="p-6 h-full flex flex-col justify-between">
+                <FileText className="h-6 w-6 text-muted-foreground mb-3" />
+                <div>
+                  <h3 className="font-semibold text-foreground">Load Menu</h3>
+                  <p className="text-sm text-muted-foreground">From Code</p>
                 </div>
-              </div>
-            </Button>
+              </CardContent>
+            </Card>
           </Link>
 
           <Link href="/my-splits">
-            <Button
-              variant="outline"
-              className="w-full min-h-20 rounded-xl p-6 flex items-center justify-start gap-4 text-base"
-              data-testid="button-my-splits"
-            >
-              <History className="h-6 w-6 flex-shrink-0" />
-              <div className="text-left">
-                <div className="font-medium">My Splits</div>
-                <div className="text-sm opacity-90">
-                  View your saved bill splits
+            <Card className="h-full bg-secondary/10 hover:bg-secondary/20 border-secondary/20 flex flex-col justify-between" data-testid="button-my-splits">
+              <CardContent className="p-6 h-full flex flex-col justify-between">
+                <History className="h-6 w-6 text-foreground mb-3" />
+                <div>
+                  <h3 className="font-semibold text-foreground">History</h3>
+                  <p className="text-sm text-muted-foreground">Past Splits</p>
                 </div>
-              </div>
-            </Button>
+              </CardContent>
+            </Card>
           </Link>
         </div>
 
@@ -165,7 +160,7 @@ export default function Home() {
               {recentActive.map((split) => {
                 const detail = getSplitDetail(split.code);
                 const grandTotal = detail?.totals?.reduce((sum, t) => sum + t.total, 0) || 0;
-                
+
                 return (
                   <Link key={split.code} href={`/split/${split.code}`}>
                     <Card className="p-4 hover-elevate cursor-pointer" data-testid={`card-active-split-${split.code}`}>

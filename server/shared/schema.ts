@@ -46,7 +46,7 @@ export const personSchema = z.object({
 export const itemQuantitySchema = z.object({
   itemId: z.number().int(),
   personId: z.string().min(1),
-  quantity: z.number().positive().int(),
+  quantity: z.number().positive(), // Removed .int() to allow fractional splits (e.g. 0.33)
 });
 
 export const personTotalSchema = z.object({
@@ -55,17 +55,30 @@ export const personTotalSchema = z.object({
   service: z.number().nonnegative().finite(),
   tip: z.number().nonnegative().finite(),
   total: z.number().nonnegative().finite(),
+  extraContribution: z.number().nonnegative().finite().optional(),
+  baseTotal: z.number().nonnegative().finite().optional(),
+});
+
+// Order Item Instance Schema (Rich Draft State)
+export const orderItemSchema = z.object({
+  instanceId: z.string(),
+  originalId: z.number(),
+  name: z.string(),
+  price: z.number(),
+  assignedTo: z.array(z.string()),
+  ownerId: z.string().optional(),
 });
 
 // Bill split database schema
 export const billSplitSchema = z.object({
   id: z.number(),
-  code: z.string().min(6).max(8), // Accept both 6-character (legacy) and 8-character codes
+  code: z.string().min(6).max(8),
   name: z.string().nullable().optional(),
-  menuCode: z.string().min(6).max(8).nullable(), // Accept both 6 and 8 character menu codes
+  menuCode: z.string().min(6).max(8).nullable(),
   people: z.string(), // JSON array
   items: z.string(), // JSON array
   quantities: z.string(), // JSON array
+  draftData: z.string().nullable().optional(), // JSON string of { orderItems: ... }
   currency: z.string(),
   serviceCharge: z.number(),
   tipPercent: z.number(),
@@ -73,7 +86,7 @@ export const billSplitSchema = z.object({
   createdAt: z.string(),
 });
 
-// Bill split item schema (allows items without menuId for manual splits)
+// Bill split item schema
 export const billSplitItemSchema = z.object({
   id: z.number(),
   menuId: z.number().optional(),
@@ -88,6 +101,7 @@ export const insertBillSplitSchema = z.object({
   people: z.array(personSchema).min(1),
   items: z.array(billSplitItemSchema).min(1),
   quantities: z.array(itemQuantitySchema).min(1),
+  draftData: z.string().optional(), // JSON string, easier to pass through
   currency: z.string().min(1),
   serviceCharge: z.number().min(0).max(100).finite(),
   tipPercent: z.number().min(0).max(100).finite(),
@@ -98,5 +112,6 @@ export const insertBillSplitSchema = z.object({
 export type Person = z.infer<typeof personSchema>;
 export type ItemQuantity = z.infer<typeof itemQuantitySchema>;
 export type PersonTotal = z.infer<typeof personTotalSchema>;
+export type OrderItem = z.infer<typeof orderItemSchema>;
 export type BillSplit = z.infer<typeof billSplitSchema>;
 export type InsertBillSplit = z.infer<typeof insertBillSplitSchema>;

@@ -38,6 +38,7 @@ class DatabaseHelper {
         people TEXT NOT NULL,
         items TEXT NOT NULL,
         quantities TEXT NOT NULL,
+        draft_data TEXT, -- Stores rich draft state (orderItems) for collaboration
         currency TEXT NOT NULL DEFAULT '£',
         service_charge REAL NOT NULL DEFAULT 0,
         tip_percent REAL NOT NULL DEFAULT 0,
@@ -55,7 +56,7 @@ class DatabaseHelper {
     try {
       const tableInfo = this.db.pragma("table_info(menus)") as Array<{ name: string }>;
       const hasCurrency = tableInfo.some((col) => col.name === "currency");
-      
+
       if (!hasCurrency) {
         this.db.exec("ALTER TABLE menus ADD COLUMN currency TEXT NOT NULL DEFAULT '£'");
         console.log("Migration: Added currency column to menus table");
@@ -68,7 +69,7 @@ class DatabaseHelper {
     try {
       const splitsTableInfo = this.db.pragma("table_info(bill_splits)") as Array<{ name: string }>;
       const hasName = splitsTableInfo.some((col) => col.name === "name");
-      
+
       if (!hasName) {
         this.db.exec("ALTER TABLE bill_splits ADD COLUMN name TEXT");
         console.log("Migration: Added name column to bill_splits table");
@@ -76,17 +77,30 @@ class DatabaseHelper {
     } catch (error) {
       console.error("Migration error for bill_splits:", error);
     }
+
+    // Migration: Add draft_data column to bill_splits if it doesn't exist
+    try {
+      const splitsTableInfo = this.db.pragma("table_info(bill_splits)") as Array<{ name: string }>;
+      const hasDraftData = splitsTableInfo.some((col) => col.name === "draft_data");
+
+      if (!hasDraftData) {
+        this.db.exec("ALTER TABLE bill_splits ADD COLUMN draft_data TEXT");
+        console.log("Migration: Added draft_data column to bill_splits table");
+      }
+    } catch (error) {
+      console.error("Migration error for bill_splits (draft_data):", error);
+    }
   }
 
   private generateCode(): string {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let code = "";
     const bytes = randomBytes(8); // Generate 8 random bytes for 8-character codes
-    
+
     for (let i = 0; i < 8; i++) { // Generate 8 characters instead of 6
       code += chars[bytes[i] % chars.length];
     }
-    
+
     return code;
   }
 
@@ -99,11 +113,11 @@ class DatabaseHelper {
       const existing = this.db
         .prepare("SELECT id FROM menus WHERE code = ?")
         .get(code);
-      
+
       if (!existing) {
         return code;
       }
-      
+
       code = this.generateCode();
       attempts++;
     }
@@ -114,11 +128,11 @@ class DatabaseHelper {
   createMenu(data: InsertMenu): { code: string; menu: Menu } {
     const code = this.generateUniqueCode();
     const currency = data.currency || "£";
-    
+
     const insertMenu = this.db.prepare(
       "INSERT INTO menus (code, name, currency) VALUES (?, ?, ?)"
     );
-    
+
     const result = insertMenu.run(code, data.name || null, currency);
     const menuId = result.lastInsertRowid as number;
 
@@ -146,7 +160,7 @@ class DatabaseHelper {
     const menu = this.db
       .prepare("SELECT * FROM menus WHERE code = ?")
       .get(code) as any;
-    
+
     if (!menu) {
       return null;
     }
@@ -164,7 +178,7 @@ class DatabaseHelper {
     const items = this.db
       .prepare("SELECT * FROM menu_items WHERE menu_id = ? ORDER BY id")
       .all(menuId) as any[];
-    
+
     return items.map((item) => ({
       id: item.id,
       menuId: item.menu_id,
@@ -220,7 +234,7 @@ class DatabaseHelper {
     let code: string = "";
     let attempts = 0;
     const maxAttempts = 10;
-    
+
     // Generate unique code checking both menus and bill_splits tables
     while (attempts < maxAttempts) {
       code = this.generateCode().toUpperCase();
@@ -230,23 +244,23 @@ class DatabaseHelper {
       const existingSplit = this.db
         .prepare("SELECT id FROM bill_splits WHERE code = ?")
         .get(code);
-      
+
       if (!existingMenu && !existingSplit) {
         break;
       }
-      
+
       attempts++;
     }
-    
+
     if (attempts >= maxAttempts) {
       throw new Error("Failed to generate unique split code");
     }
-    
+
     const insertSplit = this.db.prepare(`
-      INSERT INTO bill_splits (code, name, menu_code, people, items, quantities, currency, service_charge, tip_percent, totals)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO bill_splits (code, name, menu_code, people, items, quantities, draft_data, currency, service_charge, tip_percent, totals)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    
+
     insertSplit.run(
       code,
       data.name || null,
@@ -254,6 +268,7 @@ class DatabaseHelper {
       JSON.stringify(data.people),
       JSON.stringify(data.items),
       JSON.stringify(data.quantities),
+      data.draftData || null,
       data.currency,
       data.serviceCharge,
       data.tipPercent,
@@ -272,7 +287,7 @@ class DatabaseHelper {
     const split = this.db
       .prepare("SELECT * FROM bill_splits WHERE code = ?")
       .get(code) as any;
-    
+
     if (!split) {
       return null;
     }
@@ -285,6 +300,7 @@ class DatabaseHelper {
       people: split.people,
       items: split.items,
       quantities: split.quantities,
+      draftData: split.draft_data,
       currency: split.currency,
       serviceCharge: split.service_charge,
       tipPercent: split.tip_percent,
@@ -306,19 +322,21 @@ class DatabaseHelper {
           people = ?, 
           items = ?, 
           quantities = ?, 
+          draft_data = ?,
           currency = ?, 
           service_charge = ?, 
           tip_percent = ?, 
           totals = ?
       WHERE code = ?
     `);
-    
+
     updateSplit.run(
       data.name || null,
       data.menuCode || null,
       JSON.stringify(data.people),
       JSON.stringify(data.items),
       JSON.stringify(data.quantities),
+      data.draftData || null,
       data.currency,
       data.serviceCharge,
       data.tipPercent,
@@ -338,7 +356,7 @@ class DatabaseHelper {
     const splits = this.db
       .prepare("SELECT * FROM bill_splits WHERE menu_code = ? ORDER BY created_at DESC")
       .all(menuCode) as any[];
-    
+
     return splits.map((split) => ({
       id: split.id,
       code: split.code,

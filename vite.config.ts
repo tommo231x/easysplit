@@ -8,15 +8,15 @@ export default defineConfig({
     react(),
     runtimeErrorOverlay(),
     ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
+      process.env.REPL_ID !== undefined
       ? [
-          await import("@replit/vite-plugin-cartographer").then((m) =>
-            m.cartographer(),
-          ),
-          await import("@replit/vite-plugin-dev-banner").then((m) =>
-            m.devBanner(),
-          ),
-        ]
+        await import("@replit/vite-plugin-cartographer").then((m) =>
+          m.cartographer(),
+        ),
+        await import("@replit/vite-plugin-dev-banner").then((m) =>
+          m.devBanner(),
+        ),
+      ]
       : []),
   ],
   resolve: {
@@ -32,8 +32,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    host: "0.0.0.0",
-    port: 5000,
+    port: 3000,
     strictPort: true,
     fs: {
       strict: true,
@@ -41,11 +40,11 @@ export default defineConfig({
     },
     proxy: {
       "/api": {
-        target: "http://localhost:3000",
+        target: "http://localhost:5000",
         changeOrigin: true,
       },
       "/healthz": {
-        target: "http://localhost:3000",
+        target: "http://localhost:5000",
         changeOrigin: true,
       },
     },

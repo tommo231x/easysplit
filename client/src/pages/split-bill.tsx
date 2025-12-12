@@ -1,788 +1,559 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, Plus, X, Users, Calculator as CalculatorIcon, History, ChevronRight, FilePlus } from "lucide-react";
+import { ArrowLeft, Plus, Users, Calculator as CalculatorIcon, FilePlus, Copy, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/api";
-import type { MenuItem, Person, ItemQuantity } from "@shared/schema";
+import type { Person, ItemQuantity, OrderItem } from "@shared/schema";
 import { nanoid } from "nanoid";
 import CurrencySelector from "@/components/currency-selector";
-import { logAnalyticsEvent, AnalyticsEvents } from "@/lib/analytics";
+import { SplitEvenlyDialog } from "@/components/split-evenly-dialog";
+import { AddItemDrawer } from "@/components/add-item-drawer";
+import { AddPersonDrawer } from "@/components/add-person-drawer";
+import { BillPersonCard } from "@/components/bill-person-card";
+import { BrandLogo } from "@/components/brand-logo";
+
+// API Helpers
+async function saveSplit(data: any, code?: string) {
+  const url = code ? `/api/splits/${code}` : "/api/splits";
+  const method = code ? "PATCH" : "POST";
+
+  const res = await fetch(getApiUrl(url), {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) throw new Error("Failed to save split");
+  return res.json();
+}
 
 export default function SplitBill() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const [menuCode, setMenuCode] = useState("");
-  const [loadedMenu, setLoadedMenu] = useState<MenuItem[] | null>(null);
-  const [manualItems, setManualItems] = useState<MenuItem[]>([]);
+  // State
   const [people, setPeople] = useState<Person[]>([]);
-  const [newPersonName, setNewPersonName] = useState("");
-  const [quantities, setQuantities] = useState<ItemQuantity[]>([]);
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([]); // Rich Draft State
   const [currency, setCurrency] = useState("£");
-  const [serviceCharge, setServiceCharge] = useState(12.5);
+  const [serviceCharge, setServiceCharge] = useState(0);
   const [tipPercent, setTipPercent] = useState(0);
   const [splitName, setSplitName] = useState("");
 
+  // UX State
+  const [activePersonId, setActivePersonId] = useState<string | null>(null); // Who are we adding items for?
+  const [isAddItemOpen, setIsAddItemOpen] = useState(false);
+  const [splitDialogItem, setSplitDialogItem] = useState<OrderItem | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => sessionStorage.getItem("easysplit-user-id"));
+
+  useEffect(() => {
+    if (currentUserId) {
+      sessionStorage.setItem("easysplit-user-id", currentUserId);
+    }
+  }, [currentUserId]);
+
+  // Collaboration State
+  const [splitCode, setSplitCode] = useState<string | null>(null);
+  const [isShared, setIsShared] = useState(false);
+
+  // Initialize / Restore
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const codeParam = params.get("code");
-    if (codeParam) {
-      setMenuCode(codeParam.toUpperCase());
-    }
+    const codeParam = params.get("splitCode"); // "Join Table" link
 
-    // Restore form state from sessionStorage if user navigates back
-    const savedState = sessionStorage.getItem("easysplit-form-state");
-    if (savedState) {
-      try {
-        const state = JSON.parse(savedState);
-        if (state.manualItems) setManualItems(state.manualItems);
-        if (state.people) setPeople(state.people);
-        if (state.quantities) setQuantities(state.quantities);
-        if (state.currency) setCurrency(state.currency);
-        if (state.serviceCharge !== undefined) setServiceCharge(state.serviceCharge);
-        if (state.tipPercent !== undefined) setTipPercent(state.tipPercent);
-        if (state.splitName) setSplitName(state.splitName);
-        if (state.menuCode) setMenuCode(state.menuCode);
-        if (state.loadedMenu) setLoadedMenu(state.loadedMenu);
-      } catch (e) {
-        console.error("Failed to restore form state:", e);
+    if (codeParam) {
+      setSplitCode(codeParam);
+      setIsShared(true);
+      // Fetching handled by useQuery below
+    } else {
+      // Local Restore
+      const savedState = sessionStorage.getItem("easysplit-form-state");
+      if (savedState) {
+        try {
+          const state = JSON.parse(savedState);
+          if (state.people) setPeople(state.people);
+          if (state.orderItems) setOrderItems(state.orderItems);
+          if (state.currency) setCurrency(state.currency);
+          if (state.splitName) setSplitName(state.splitName);
+          if (state.serviceCharge !== undefined) setServiceCharge(state.serviceCharge);
+          if (state.tipPercent !== undefined) setTipPercent(state.tipPercent);
+        } catch (e) {
+          console.error("Failed to restore state", e);
+        }
       }
     }
   }, []);
 
-  const { refetch: loadMenu, isFetching } = useQuery({
-    queryKey: ["/api/menus", menuCode],
+  // Persist Local State (debouncedish via effect)
+  useEffect(() => {
+    if (!splitCode) {
+      const state = { people, orderItems, currency, splitName, serviceCharge, tipPercent };
+      sessionStorage.setItem("easysplit-form-state", JSON.stringify(state));
+    }
+  }, [people, orderItems, currency, splitName, serviceCharge, tipPercent, splitCode]);
+
+  // POLL for updates if Shared
+  const { data: serverSplit } = useQuery({
+    queryKey: ["split", splitCode],
     queryFn: async () => {
-      const response = await fetch(getApiUrl(`/api/menus/${menuCode}`));
-      if (!response.ok) {
-        throw new Error("Menu not found");
-      }
-      return response.json();
+      if (!splitCode) return null;
+      const res = await fetch(getApiUrl(`/api/splits/${splitCode}`));
+      if (!res.ok) throw new Error("Failed to load split");
+      return res.json();
     },
-    enabled: false,
-    retry: false,
+    enabled: !!splitCode && isShared,
+    refetchInterval: 3000, // Poll every 3s
   });
 
-  const { 
-    data: splitHistory, 
-    isError: splitHistoryError,
-    isFetching: isFetchingHistory 
-  } = useQuery<Array<{
-    code: string;
-    menuCode: string | null;
-    people: Person[];
-    totals: Array<{
-      person: Person;
-      subtotal: number;
-      service: number;
-      tip: number;
-      total: number;
-    }>;
-    currency: string;
-    createdAt: string;
-  }>>({
-    queryKey: ['/api/menus', menuCode, 'splits'],
-    queryFn: async () => {
-      const response = await fetch(getApiUrl(`/api/menus/${menuCode}/splits`));
-      if (!response.ok) {
-        throw new Error('Failed to fetch split history');
+  // Sync Server State -> Local State
+  useEffect(() => {
+    if (serverSplit) {
+      // 1. Sync People
+      // We use stringify for simple deep compare of the array
+      if (JSON.stringify(serverSplit.people) !== JSON.stringify(people)) {
+        setPeople(serverSplit.people);
       }
-      return response.json();
-    },
-    enabled: !!loadedMenu && menuCode.length >= 6 && menuCode.length <= 8,
-    retry: false,
+
+      // 2. Sync Draft Data (Order Items)
+      // This is the CRITICAL part for syncing splits between Tom and Dave
+      if (serverSplit.draftData) {
+        try {
+          const draft = JSON.parse(serverSplit.draftData);
+          // Compare current local items with server items
+          if (JSON.stringify(draft.orderItems) !== JSON.stringify(orderItems)) {
+            console.log("Syncing external changes...", draft.orderItems);
+            setOrderItems(draft.orderItems);
+          }
+        } catch (e) { console.error("Draft parse error", e); }
+      }
+
+      // 3. Sync Meta
+      if (serverSplit.name !== splitName && serverSplit.name) setSplitName(serverSplit.name);
+      if (serverSplit.currency !== currency && serverSplit.currency) setCurrency(serverSplit.currency);
+    }
+  }, [serverSplit]);
+
+
+  // Auto-Save Changes if Shared
+  const saveMutation = useMutation({
+    mutationFn: (data: any) => saveSplit(data, splitCode || undefined),
+    onSuccess: (data) => {
+      if (!splitCode && data.code) {
+        setSplitCode(data.code);
+        setIsShared(true);
+        // Update URL without reload
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set("splitCode", data.code);
+        window.history.pushState({}, "", newUrl);
+        toast({ title: "Session Created", description: "You can now share the link!" });
+      }
+    }
   });
 
-  const handleLoadMenu = async () => {
-    if (!menuCode.trim()) {
-      toast({
-        title: "Enter menu code",
-        description: "Please enter a menu code",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Central Save Trigger
+  const triggerSave = () => {
+    if (!isShared) return; // Only auto-save if already shared
 
-    const result = await loadMenu();
-    if (result.data) {
-      setLoadedMenu(result.data.items);
-      setCurrency(result.data.menu.currency || "£");
-      setManualItems([]);
-      // Invalidate split history cache to trigger fresh fetch
-      queryClient.invalidateQueries({
-        queryKey: ['/api/menus', menuCode, 'splits']
-      });
-      toast({
-        title: "Menu loaded!",
-        description: `Loaded ${result.data.items.length} items`,
-      });
-    } else {
-      toast({
-        title: "Menu not found",
-        description: "Please check the code and try again",
-        variant: "destructive",
-      });
-    }
-  };
+    // Construct the "Draft" payload
+    const payload = {
+      name: splitName,
+      people,
+      // Hack to satisfy "min(1)" constraint for legacy schema
+      items: orderItems.length > 0
+        ? orderItems.map((i, idx) => ({ id: idx + 1, name: i.name, price: i.price }))
+        : [{ id: 0, name: "_draft", price: 0 }],
+      quantities: orderItems.length > 0
+        ? [{ itemId: 1, personId: people[0]?.id || "0", quantity: 1 }]
+        : [{ itemId: 0, personId: "0", quantity: 1 }],
+      totals: [{ person: { id: "0", name: "Draft" }, subtotal: 0, service: 0, tip: 0, total: 0 }], // Dummy
 
-  const addManualItem = () => {
-    const newItem: MenuItem = {
-      id: Date.now(),
-      menuId: 0,
-      name: "",
-      price: 0,
+      // THE REAL DATA:
+      draftData: JSON.stringify({ orderItems }),
+
+      currency,
+      serviceCharge,
+      tipPercent
     };
-    setManualItems([...manualItems, newItem]);
-    setLoadedMenu(null);
-    logAnalyticsEvent(AnalyticsEvents.ITEM_ADDED);
+
+    saveMutation.mutate(payload);
   };
 
-  const updateManualItem = (id: number, field: "name" | "price", value: string | number) => {
-    setManualItems(
-      manualItems.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item
-      )
-    );
-  };
-
-  const removeManualItem = (id: number) => {
-    setManualItems(manualItems.filter((item) => item.id !== id));
-    logAnalyticsEvent(AnalyticsEvents.ITEM_REMOVED);
-  };
-
-  const addPerson = () => {
-    if (!newPersonName.trim()) {
-      toast({
-        title: "Enter a name",
-        description: "Please enter a person's name",
-        variant: "destructive",
-      });
-      return;
+  // Call triggerSave on significant changes
+  useEffect(() => {
+    if (isShared) {
+      const timeout = setTimeout(triggerSave, 1000); // Debounce 1s
+      return () => clearTimeout(timeout);
     }
+  }, [people, orderItems, splitName, currency]);
 
-    const person: Person = {
-      id: nanoid(),
-      name: newPersonName.trim(),
-    };
-    setPeople([...people, person]);
-    setNewPersonName("");
-  };
 
-  const removePerson = (id: string) => {
-    setPeople(people.filter((p) => p.id !== id));
-    setQuantities(quantities.filter((q) => q.personId !== id));
-  };
-
-  const getQuantity = (itemId: number, personId: string): number => {
-    const q = quantities.find((q) => q.itemId === itemId && q.personId === personId);
-    return q?.quantity || 0;
-  };
-
-  const updateQuantity = (itemId: number, personId: string, delta: number) => {
-    const current = getQuantity(itemId, personId);
-    const newQuantity = Math.max(0, current + delta);
-
-    setQuantities((prev) => {
-      const existing = prev.find((q) => q.itemId === itemId && q.personId === personId);
-      if (existing) {
-        if (newQuantity === 0) {
-          return prev.filter((q) => !(q.itemId === itemId && q.personId === personId));
+  // Real-Time Calculation Hook
+  const calculatedTotals = useMemo(() => {
+    return people.map(person => {
+      let subtotal = 0;
+      orderItems.forEach(item => {
+        const assignees = item.assignedTo || [];
+        if (assignees.includes(person.id)) {
+          const count = assignees.length || 1;
+          subtotal += item.price / count;
         }
-        return prev.map((q) =>
-          q.itemId === itemId && q.personId === personId
-            ? { ...q, quantity: newQuantity }
-            : q
-        );
-      } else if (newQuantity > 0) {
-        return [...prev, { itemId, personId, quantity: newQuantity }];
+      });
+
+      const serviceAmt = subtotal * (serviceCharge / 100);
+      const tipAmt = subtotal * (tipPercent / 100);
+
+      return {
+        personId: person.id,
+        subtotal,
+        service: serviceAmt,
+        tip: tipAmt,
+        total: subtotal + serviceAmt + tipAmt
+      };
+    });
+  }, [people, orderItems, serviceCharge, tipPercent]);
+
+  // Actions
+  const handleAddPerson = (name: string) => {
+    const newPerson = { id: nanoid(), name };
+    setPeople([...people, newPerson]);
+
+    // Auto-claim identity if first person or unclaimed
+    if (!currentUserId) {
+      setCurrentUserId(newPerson.id);
+    }
+  };
+
+  const handleRemovePerson = (id: string) => {
+    // 1. Remove the person
+    setPeople(prev => prev.filter(p => p.id !== id));
+
+    // 2. Remove items OWNED by this person
+    setOrderItems(prev => {
+      // First filter out owned items
+      const remainingItems = prev.filter(i => i.ownerId !== id);
+
+      // 3. Remove this person from assignedTo in ALL other items
+      return remainingItems.map(item => {
+        if (item.assignedTo.includes(id)) {
+          const newAssigned = item.assignedTo.filter(pid => pid !== id);
+          return {
+            ...item,
+            // If they were the only one assigned, revert to owner or empty? 
+            // Logic: If assignedTo becomes empty, default back to ownerId if exists, otherwise leave empty (unassigned)
+            assignedTo: newAssigned.length > 0 ? newAssigned : (item.ownerId && item.ownerId !== id ? [item.ownerId] : [])
+          };
+        }
+        return item;
+      });
+    });
+  };
+
+  const handleManualAddItem = (name: string, price: number) => {
+    if (!activePersonId) return;
+
+    const newItem: OrderItem = {
+      instanceId: nanoid(),
+      originalId: 0, // Manual
+      name,
+      price,
+      ownerId: activePersonId,
+      assignedTo: [activePersonId],
+    };
+
+    setOrderItems(prev => [...prev, newItem]);
+    setIsAddItemOpen(false); // Close drawer
+  };
+
+  const handleSplitItem = (instanceId: string, assignedIds: string[]) => {
+    setOrderItems(prev => prev.map(item =>
+      item.instanceId === instanceId
+        ? { ...item, assignedTo: assignedIds }
+        : item
+    ));
+  };
+
+
+
+  const handleCloseBill = async () => {
+    if (people.length === 0 || orderItems.length === 0) {
+      toast({ title: "Nothing to split", variant: "destructive" });
+      return;
+    }
+
+    if (!confirm("Are you sure you want to close this bill? This will save it to history.")) {
+      return;
+    }
+
+    // 2. Prepare Payload (Map Instances -> Bill Items)
+    const billItems = orderItems.map((item, idx) => ({
+      id: idx + 1,
+      name: item.name,
+      price: item.price
+    }));
+
+    const billQuantities: ItemQuantity[] = orderItems.flatMap((item, idx) => {
+      const itemId = idx + 1;
+      const count = item.assignedTo.length;
+      return item.assignedTo.map(personId => ({
+        itemId,
+        personId,
+        quantity: Number((1 / count).toFixed(4))
+      }));
+    });
+
+    // Remap calculatedTotals to the format expected by the backend
+    const finalTotals = calculatedTotals.map(t => {
+      const person = people.find(p => p.id === t.personId);
+      return {
+        person: person || { id: "0", name: "Unknown" },
+        subtotal: t.subtotal,
+        service: t.service,
+        tip: t.tip,
+        total: t.total
+      };
+    });
+
+    const payload = {
+      name: splitName || "Untitled Split",
+      people,
+      items: billItems,
+      quantities: billQuantities,
+      totals: finalTotals,
+      currency,
+      serviceCharge,
+      tipPercent,
+      draftData: JSON.stringify({ orderItems })
+    };
+
+    try {
+      const result = await saveSplit(payload, splitCode || undefined);
+
+      // Save to local history immediately (Strings only, matching my-splits.tsx expectation)
+      try {
+        const history: string[] = JSON.parse(localStorage.getItem("easysplit-my-splits") || "[]");
+        // Dedupe: remove if exists
+        const filtered = history.filter((c: string) => c !== result.code);
+        // Prepend and cap at 50
+        const newHistory = [result.code, ...filtered].slice(0, 50);
+        localStorage.setItem("easysplit-my-splits", JSON.stringify(newHistory));
+      } catch (e) {
+        console.error("Failed to save to local history", e);
       }
-      return prev;
-    });
+
+      setLocation(`/results?splitCode=${result.code}`);
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Failed to save split", variant: "destructive" });
+    }
   };
 
-  const handleNewSplit = () => {
-    // Clear all session storage
-    sessionStorage.removeItem("easysplit-form-state");
-    sessionStorage.removeItem("easysplit-split-code");
-    sessionStorage.removeItem("easysplit-results");
-    sessionStorage.removeItem("easysplit-results-state");
-    
-    // Reset all form state
-    setMenuCode("");
-    setLoadedMenu(null);
-    setManualItems([]);
-    setPeople([]);
-    setNewPersonName("");
-    setQuantities([]);
-    setCurrency("£");
-    setServiceCharge(12.5);
-    setTipPercent(0);
-    setSplitName("");
-    
-    logAnalyticsEvent(AnalyticsEvents.SPLIT_CREATED);
-    
-    toast({
-      title: "New split started",
-      description: "All fields have been cleared",
-    });
+  const handleShare = () => {
+    setIsShared(true);
+    triggerSave(); // Forces a save to generate code
   };
 
-const handleCalculate = () => {
-    const items = loadedMenu || manualItems;
-
-    if (items.length === 0) {
-      toast({
-        title: "No items",
-        description: "Please load a menu or add items manually",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (people.length === 0) {
-      toast({
-        title: "No people",
-        description: "Please add at least one person",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const validItems = items.filter((item) => item.name && item.price > 0);
-    if (validItems.length === 0) {
-      toast({
-        title: "Invalid items",
-        description: "All items must have a name and price",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Clear any previous split code - this is a fresh calculation
-    sessionStorage.removeItem("easysplit-split-code");
-    
-    // Save form state for back navigation
-    sessionStorage.setItem(
-      "easysplit-form-state",
-      JSON.stringify({
-        manualItems,
-        people,
-        quantities,
-        currency,
-        serviceCharge,
-        tipPercent,
-        splitName,
-        menuCode: loadedMenu && menuCode ? menuCode : "",
-        loadedMenu,
-      })
-    );
-    
-    // Save results data
-    sessionStorage.setItem(
-      "easysplit-results",
-      JSON.stringify({
-        items: validItems,
-        people,
-        quantities,
-        currency,
-        serviceCharge,
-        tipPercent,
-        menuCode: loadedMenu && menuCode ? menuCode : undefined,
-        splitName: splitName.trim() || undefined,
-      })
-    );
-    setLocation("/results");
+  const copyLink = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    toast({ title: "Link Copied", description: "Send this to your friends!" });
   };
 
-  const items = loadedMenu || manualItems;
+  const handleStartOver = () => {
+    if (confirm("Start over?")) {
+      setPeople([]);
+      setOrderItems([]);
+      setSplitCode(null);
+      setIsShared(false);
+      setSplitName("");
+      window.history.pushState({}, "", "/split-bill");
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <header className="sticky top-0 z-10 bg-background border-b h-16 flex items-center px-4 gap-2">
-        <Link href="/">
-          <Button variant="ghost" size="icon" className="h-11 w-11" data-testid="button-back">
-            <ArrowLeft className="h-6 w-6" />
-          </Button>
-        </Link>
-        <h1 className="text-xl font-semibold flex-1">Split Bill</h1>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              data-testid="button-new-split"
-            >
-              <FilePlus className="h-4 w-4 mr-2" />
-              New Split
+    <div className="min-h-screen bg-background pb-32">
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b-2 border-black h-16 flex items-center px-4 justify-between brutal-shadow-sm mb-6">
+        <div className="flex items-center gap-2">
+          <Link href="/">
+            <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-primary/10 rounded-full">
+              <ArrowLeft className="h-6 w-6" />
             </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Start a new split?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will clear all current data including items, people, and calculations. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel data-testid="button-cancel-new-split">Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleNewSplit} data-testid="button-confirm-new-split">
-                Start New Split
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          </Link>
+          <BrandLogo />
+        </div>
+        <div className="flex gap-2">
+          {/* Clean Header Actions */}
+          <Button variant="ghost" size="icon" onClick={() => setIsShared(true)} className={isShared ? "text-green-600 bg-green-50" : "text-muted-foreground"}>
+            <Share2 className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={handleStartOver} className="hover:text-destructive"><FilePlus className="h-5 w-5" /></Button>
+        </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        {/* Mobile-Friendly Step Guide */}
-        <Card className="p-4 bg-primary/5 border-primary/20">
-          <div className="space-y-3">
-            <h2 className="font-semibold text-center text-lg">How to Split Your Bill</h2>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className={`flex items-start gap-2 p-2 rounded-lg ${items.length > 0 ? 'bg-primary/10' : 'bg-muted/50'}`}>
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${items.length > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/30 text-muted-foreground'}`}>1</span>
-                <div>
-                  <div className="font-medium">Add Items</div>
-                  <div className="text-xs text-muted-foreground">Load menu or add manually</div>
-                </div>
-              </div>
-              <div className={`flex items-start gap-2 p-2 rounded-lg ${people.length > 0 ? 'bg-primary/10' : 'bg-muted/50'}`}>
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${people.length > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/30 text-muted-foreground'}`}>2</span>
-                <div>
-                  <div className="font-medium">Add People</div>
-                  <div className="text-xs text-muted-foreground">Who's splitting?</div>
-                </div>
-              </div>
-              <div className={`flex items-start gap-2 p-2 rounded-lg ${quantities.length > 0 ? 'bg-primary/10' : 'bg-muted/50'}`}>
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${quantities.length > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/30 text-muted-foreground'}`}>3</span>
-                <div>
-                  <div className="font-medium">Assign Items</div>
-                  <div className="text-xs text-muted-foreground">Who had what?</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 p-2 rounded-lg bg-muted/50">
-                <span className="w-6 h-6 rounded-full bg-muted-foreground/30 text-muted-foreground flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>
-                <div>
-                  <div className="font-medium">Calculate</div>
-                  <div className="text-xs text-muted-foreground">See who owes what</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
+      <main className="max-w-md mx-auto p-4 space-y-6 pb-32">
 
-        <Card className="p-6">
-          <Label htmlFor="split-name" className="text-sm mb-2 block">
-            Split Name <span className="text-muted-foreground">(optional)</span>
-          </Label>
+        {/* Sync/Share Status */}
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 flex flex-col items-center text-center gap-3">
+          {!splitCode ? (
+            <>
+              <div className="bg-primary/10 p-3 rounded-full"><Share2 className="h-6 w-6 text-primary" /></div>
+              <div>
+                <h3 className="font-medium text-sm">Dining with friends?</h3>
+                <p className="text-xs text-muted-foreground mt-1">Share a live link so everyone can add their own items.</p>
+              </div>
+              <Button size="sm" onClick={handleShare} className="w-full">Create Live Session</Button>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 text-green-600 font-medium text-sm">
+                <span className="relative flex h-2.5 w-2.5 mr-1">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                </span>
+                Live Session Active
+              </div>
+              <div className="flex w-full gap-2">
+                <Input readOnly value={window.location.href} className="text-xs h-8" />
+                <Button size="icon" className="h-8 w-8 shrink-0" onClick={copyLink}><Copy className="h-4 w-4" /></Button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Split Name Input */}
+        <div className="bg-white p-4 border-2 border-black brutal-shadow rounded-2xl transform -rotate-1 hover:rotate-0 transition-transform duration-200">
+          <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1 block">What are we eating?</Label>
           <Input
-            id="split-name"
-            placeholder="e.g. 'Team Lunch' or 'Sarah's Birthday Dinner'"
+            placeholder="e.g. Sushi Night 🍣"
+            className="text-2xl font-black border-none px-0 focus-visible:ring-0 placeholder:font-bold placeholder:text-muted-foreground/30 bg-transparent h-auto"
             value={splitName}
-            onChange={(e) => setSplitName(e.target.value)}
-            className="h-12"
-            data-testid="input-split-name"
+            onChange={e => setSplitName(e.target.value)}
           />
-          <p className="text-xs text-muted-foreground mt-2">
-            Give your split a name so everyone knows what it's for when you share it
-          </p>
-        </Card>
+        </div>
 
-        <Tabs defaultValue="code" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="code" data-testid="tab-code">
-              Load by Code
-            </TabsTrigger>
-            <TabsTrigger value="manual" data-testid="tab-manual">
-              Add Manually
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="code" className="space-y-4 mt-4">
-            <Card className="p-6">
-              <Label htmlFor="menu-code" className="text-sm mb-2 block">
-                Enter Menu Code
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  id="menu-code"
-                  placeholder="ABC12345"
-                  value={menuCode}
-                  onChange={(e) => setMenuCode(e.target.value.toUpperCase())}
-                  className="h-12 font-mono text-lg"
-                  maxLength={8}
-                  data-testid="input-menu-code"
-                />
-                <Button
-                  onClick={handleLoadMenu}
-                  disabled={isFetching}
-                  className="h-12"
-                  data-testid="button-load-menu"
-                >
-                  {isFetching ? "Loading..." : "Load"}
-                </Button>
-              </div>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="manual" className="space-y-4 mt-4">
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-medium">Manual Items</h3>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Add each item from the bill with its price
-              </p>
-
-              {manualItems.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-sm text-muted-foreground mb-4">
-                    No items yet. Tap the button below to add your first item.
-                  </p>
-                  <Button
-                    onClick={addManualItem}
-                    className="h-12 px-6"
-                    data-testid="button-add-manual-item"
-                  >
-                    <Plus className="h-5 w-5 mr-2" />
-                    Add First Item
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {manualItems.map((item, index) => (
-                    <div key={item.id} className="flex gap-2 items-center">
-                      <span className="text-sm text-muted-foreground w-6 text-center flex-shrink-0">{index + 1}</span>
-                      <Input
-                        placeholder="Item name"
-                        value={item.name}
-                        onChange={(e) => updateManualItem(item.id, "name", e.target.value)}
-                        className="h-12 flex-1"
-                        data-testid={`input-manual-item-name-${item.id}`}
-                      />
-                      <div className="flex items-center gap-1 w-28 flex-shrink-0">
-                        <span className="text-muted-foreground">{currency}</span>
-                        <Input
-                          type="number"
-                          placeholder="0.00"
-                          value={item.price || ""}
-                          onChange={(e) =>
-                            updateManualItem(item.id, "price", parseFloat(e.target.value) || 0)
-                          }
-                          className="h-12"
-                          step="0.01"
-                          min="0"
-                          data-testid={`input-manual-item-price-${item.id}`}
-                        />
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-12 w-12 flex-shrink-0"
-                        onClick={() => removeManualItem(item.id)}
-                        data-testid={`button-remove-manual-item-${item.id}`}
-                      >
-                        <X className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button
-                    onClick={addManualItem}
-                    variant="outline"
-                    className="w-full h-12 mt-2"
-                    data-testid="button-add-another-item"
-                  >
-                    <Plus className="h-5 w-5 mr-2" />
-                    Add Another Item
-                  </Button>
-                </div>
-              )}
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        {loadedMenu && (
-          <Collapsible defaultOpen>
-            <Card className="p-6">
-              <CollapsibleTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-between h-auto p-0" 
-                  data-testid="button-toggle-history"
-                >
-                  <div className="flex items-center gap-2">
-                    <History className="h-5 w-5" />
-                    <h3 className="font-medium">
-                      Past Splits {splitHistory && splitHistory.length > 0 ? `(${splitHistory.length})` : ''}
-                    </h3>
-                  </div>
-                  <ChevronRight className="h-5 w-5 transition-transform ui-state-open:rotate-90" />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4">
-                {isFetchingHistory && (
-                  <div className="text-center py-4 text-sm text-muted-foreground">
-                    Loading history...
-                  </div>
-                )}
-                {splitHistoryError && (
-                  <div className="text-center py-4 text-sm text-destructive">
-                    Unable to load split history
-                  </div>
-                )}
-                {!isFetchingHistory && !splitHistoryError && (!splitHistory || splitHistory.length === 0) && (
-                  <div className="text-center py-4 text-sm text-muted-foreground">
-                    No past splits for this menu yet
-                  </div>
-                )}
-                {!isFetchingHistory && !splitHistoryError && splitHistory && splitHistory.length > 0 && (
-                  <div className="space-y-2">
-                    {splitHistory.map((split) => {
-                      const participantNames = split.people.map(p => p.name).join(", ");
-                      const grandTotal = split.totals.reduce((sum, t) => sum + t.total, 0);
-                      const date = new Date(split.createdAt);
-                      
-                      return (
-                        <Link key={split.code} href={`/split/${split.code}`} data-testid={`link-split-${split.code}`}>
-                          <Card className="p-4 hover-elevate active-elevate-2 cursor-pointer" data-testid={`card-split-${split.code}`}>
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <code className="text-xs font-mono bg-muted px-2 py-1 rounded">
-                                    {split.code}
-                                  </code>
-                                  <span className="text-xs text-muted-foreground">
-                                    {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-muted-foreground">
-                                  {participantNames}
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-semibold" data-testid={`text-split-total-${split.code}`}>
-                                  {split.currency}{grandTotal.toFixed(2)}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {split.people.length} {split.people.length === 1 ? 'person' : 'people'}
-                                </p>
-                              </div>
-                            </div>
-                          </Card>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
-        )}
-
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Users className="h-5 w-5" />
-            <h3 className="font-medium">Step 2: Add People</h3>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            Add everyone who's splitting the bill
-          </p>
-
-          <div className="flex gap-2 mb-4">
+        {/* Global Settings (Compact) */}
+        <div className="flex gap-4">
+          <div className="flex-1 bg-white p-3 border-2 border-black rounded-xl shadow-sm">
+            <Label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Service %</Label>
             <Input
-              placeholder="Enter name and tap Add"
-              value={newPersonName}
-              onChange={(e) => setNewPersonName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addPerson()}
-              className="h-12 flex-1"
-              data-testid="input-person-name"
+              type="number"
+              min="0"
+              placeholder="0"
+              value={serviceCharge === 0 ? "" : serviceCharge}
+              onChange={e => {
+                const val = e.target.value;
+                if (val === "") {
+                  setServiceCharge(0);
+                  return;
+                }
+                const num = parseFloat(val);
+                if (!isNaN(num) && num >= 0) {
+                  setServiceCharge(num);
+                }
+              }}
+              className="h-8 border-black font-bold text-lg"
             />
-            <Button onClick={addPerson} className="h-12 px-6" data-testid="button-add-person">
-              <Plus className="h-5 w-5 mr-2" />
-              Add
-            </Button>
+            <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
+              Check if included by restaurant.
+            </p>
+          </div>
+          <div className="bg-white p-3 border-2 border-black rounded-xl shadow-sm w-1/3">
+            <Label className="text-[10px] font-bold uppercase text-muted-foreground mb-1 block">Currency</Label>
+            <CurrencySelector value={currency} onChange={setCurrency} />
+          </div>
+        </div>
+
+        {/* People & Items List */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-end pb-2 border-b">
+            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Orders</Label>
+            <span className="text-xs text-muted-foreground">{people.length} people</span>
           </div>
 
           {people.length === 0 ? (
-            <div className="text-center py-4 text-sm text-muted-foreground bg-muted/50 rounded-lg">
-              No people added yet. Enter a name above and tap "Add"
+            <div className="text-center py-10 opacity-60">
+              <Users className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm">Add the first person to start ordering.</p>
+              <div className="mt-4">
+                <AddPersonDrawer onAddPerson={handleAddPerson} trigger={<Button>Add Person</Button>} />
+              </div>
             </div>
           ) : (
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">{people.length} {people.length === 1 ? 'person' : 'people'} added:</p>
-              <div className="flex flex-wrap gap-2">
-                {people.map((person) => (
-                  <Badge
+            <>
+              {people.map(person => {
+                const totals = calculatedTotals.find(t => t.personId === person.id);
+                return (
+                  <BillPersonCard
                     key={person.id}
-                    variant="secondary"
-                    className="pl-4 pr-1 py-1 text-base rounded-full flex items-center gap-1"
-                    data-testid={`badge-person-${person.id}`}
-                  >
-                    {person.name}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-full ml-1"
-                      onClick={() => removePerson(person.id)}
-                      data-testid={`button-remove-person-${person.id}`}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </Badge>
-                ))}
+                    person={person}
+                    items={orderItems.filter(i => i.ownerId === person.id || i.assignedTo.includes(person.id))}
+                    currency={currency}
+                    isCurrentUser={person.id === currentUserId}
+                    subtotal={totals?.subtotal}
+                    total={totals?.total}
+                    onAddItem={() => {
+                      setActivePersonId(person.id);
+                      setIsAddItemOpen(true);
+                    }}
+                    onRemoveItem={(id) => setOrderItems(o => o.filter(i => i.instanceId !== id))}
+                    onRemovePerson={() => handleRemovePerson(person.id)}
+                    onSplitItem={(item) => setSplitDialogItem(item)}
+                  />
+                )
+              })}
+
+              <div className="pt-2 flex justify-center">
+                <AddPersonDrawer onAddPerson={handleAddPerson} />
               </div>
-            </div>
+            </>
           )}
-        </Card>
-
-        {items.length > 0 && people.length > 0 && (
-          <Card className="p-6">
-            <div className="mb-2">
-              <h3 className="font-medium">Step 3: Assign Items</h3>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Tap + or - to set how many of each item each person had
-            </p>
-            <div className="space-y-4">
-              {items.map((item) => (
-                <div key={item.id} className="border-b last:border-0 pb-4 last:pb-0">
-                  <div className="flex justify-between items-start mb-3 bg-muted/30 p-3 rounded-lg">
-                    <div>
-                      <div className="font-medium text-base">{item.name}</div>
-                      <div className="text-sm font-semibold text-primary">
-                        {currency}{item.price.toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    {people.map((person) => {
-                      const qty = getQuantity(item.id, person.id);
-                      return (
-                        <div
-                          key={person.id}
-                          className={`flex items-center justify-between rounded-lg p-3 gap-3 ${qty > 0 ? 'bg-primary/10 border border-primary/20' : 'bg-muted/50'}`}
-                        >
-                          <span className="text-sm font-medium flex-1 min-w-0">{person.name}</span>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-11 w-11 text-lg font-bold"
-                              onClick={() => updateQuantity(item.id, person.id, -1)}
-                              disabled={qty === 0}
-                              data-testid={`button-decrease-${item.id}-${person.id}`}
-                            >
-                              -
-                            </Button>
-                            <span
-                              className={`w-10 text-center font-mono font-bold text-lg ${qty > 0 ? 'text-primary' : 'text-muted-foreground'}`}
-                              data-testid={`text-quantity-${item.id}-${person.id}`}
-                            >
-                              {qty || "0"}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-11 w-11 text-lg font-bold"
-                              onClick={() => updateQuantity(item.id, person.id, 1)}
-                              data-testid={`button-increase-${item.id}-${person.id}`}
-                            >
-                              +
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        <Card className="p-6">
-          <h3 className="font-medium mb-4">Calculation Settings</h3>
-          <div className="space-y-4">
-            <CurrencySelector 
-              value={currency} 
-              onChange={setCurrency}
-              testId="select-currency"
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="service" className="text-sm mb-2 block">
-                  Service (%)
-                </Label>
-                <Input
-                  id="service"
-                  type="number"
-                  value={serviceCharge || ""}
-                  onChange={(e) => setServiceCharge(parseFloat(e.target.value) || 0)}
-                  placeholder="0"
-                  className="h-12"
-                  step="0.5"
-                  min="0"
-                  data-testid="input-service-charge"
-                />
-              </div>
-              <div>
-                <Label htmlFor="tip" className="text-sm mb-2 block">
-                  Tip (%)
-                </Label>
-                <Input
-                  id="tip"
-                  type="number"
-                  value={tipPercent || ""}
-                  onChange={(e) => setTipPercent(parseFloat(e.target.value) || 0)}
-                  placeholder="0"
-                  className="h-12"
-                  step="0.5"
-                  min="0"
-                  data-testid="input-tip-percent"
-                />
-              </div>
-            </div>
-          </div>
-        </Card>
+        </div>
       </main>
 
-      {/* Sticky Calculate Button - with extra padding to prevent accidental clicks */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg z-20">
-        <div className="max-w-2xl mx-auto px-4 py-4">
-          <Button
-            onClick={handleCalculate}
-            className="w-full h-14 text-base"
-            data-testid="button-calculate"
-          >
-            <CalculatorIcon className="h-5 w-5 mr-2" />
-            Calculate Split
-          </Button>
+      {/* Sticky Footer for Total & Close */}
+      {people.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-black p-4 pb-8 brutal-shadow z-20">
+          <div className="max-w-md mx-auto flex items-center justify-between gap-4">
+            <div>
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Grand Total</span>
+              <div className="text-3xl font-black leading-none">
+                {currency}
+                {(calculatedTotals.reduce((sum, t) => sum + t.total, 0)).toFixed(2)}
+              </div>
+            </div>
+            <Button size="lg" className="flex-1 h-12 text-lg font-bold bg-black text-white hover:bg-primary hover:scale-[1.02] transition-transform brutal-shadow-sm" onClick={handleCloseBill}>
+              Close Bill <CalculatorIcon className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+
+      {/* Drawers & Dialogs */}
+      <AddItemDrawer
+        open={isAddItemOpen}
+        onOpenChange={setIsAddItemOpen}
+        onAddItem={handleManualAddItem}
+        currency={currency}
+      />
+
+      {
+        splitDialogItem && (
+          <SplitEvenlyDialog
+            isOpen={!!splitDialogItem}
+            onOpenChange={(open) => !open && setSplitDialogItem(null)}
+            itemName={splitDialogItem.name}
+            people={people}
+            initialSelectedIds={splitDialogItem.assignedTo}
+            onConfirm={(ids) => {
+              handleSplitItem(splitDialogItem.instanceId, ids);
+            }}
+          />
+        )
+      }
+    </div >
   );
 }

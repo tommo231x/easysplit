@@ -9,9 +9,9 @@ const app = express();
 app.set('trust proxy', 1);
 
 // Enable CORS for all routes with credentials support
-app.use(cors({ 
+app.use(cors({
   origin: true,
-  credentials: true 
+  credentials: true
 }));
 
 // Render health check endpoint
@@ -49,9 +49,9 @@ app.use((req: Request, res: Response, next: NextFunction): void => {
     if (path.startsWith("/api")) {
       // Skip verbose logging for expected 404s (stale split/menu links)
       // These are normal after deploys when clients have old share links open
-      const isExpected404 = res.statusCode === 404 && 
+      const isExpected404 = res.statusCode === 404 &&
         (path.match(/^\/api\/splits\/[A-Z0-9]+$/i) || path.match(/^\/api\/menus\/[A-Z0-9]+$/i));
-      
+
       if (isExpected404) {
         // Log minimally for expected 404s (no response body to reduce noise)
         console.log(`[express] ${req.method} ${path} 404 in ${duration}ms`);
@@ -91,7 +91,6 @@ const port = parseInt(process.env.PORT || "5000", 10);
 server.listen({
   port,
   host: "0.0.0.0",
-  reusePort: true,
 }, () => {
   console.log(`[express] serving on port ${port}`);
 });
