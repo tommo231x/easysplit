@@ -1,0 +1,68 @@
+Context: EasySplit is deployed and working, but there are mobile UX glitches that make the app feel broken. Fix the issues below and test on mobile (Chrome + Safari if possible), focusing on touch input and bottom-sheet / drawer behaviour.
+
+1) “Create live session” feels delayed / doesn’t create link immediately
+
+Bug: When the user taps Create Live Session (or “Go Live”), the live session + shareable link is not created immediately. It only appears/updates after the user performs another action (e.g., adds a name or adds a meal/item).
+Expected: The live session should be created instantly on button press, and the UI should immediately show the share link / session state (loading → success), without requiring any further user actions.
+
+Fix goals:
+
+On click, call the session creation logic immediately.
+
+Show a loading state while creating.
+
+Once created, render the link instantly and copy/share button should work immediately.
+
+Ensure state updates (React state / store) trigger a re-render right away.
+
+2) Bottom sheet / slide-up input panel scroll + focus instability
+
+Bug: The slide-up menu / bottom sheet that contains the inputs sometimes forces the user to scroll to see fields/buttons, and sometimes “flips out” / collapses / returns the user to the main screen unexpectedly while they’re interacting.
+Expected: Bottom sheet should stay open and stable while user is entering data. Inputs and primary buttons should remain visible without awkward scrolling or sudden dismissal.
+
+Fix goals:
+
+Make the bottom sheet height responsive to viewport (especially with keyboard open).
+
+Prevent accidental close from scroll/touch events unless user intentionally dismisses.
+
+Keep focused input visible (auto-scroll into view).
+
+Ensure content inside the sheet scrolls, not the page behind it.
+
+3) Numeric price input jumps focus back to item name after each digit
+
+Bug: On mobile, when adding an item (e.g., name “pizza”), entering price is broken: typing 4 jumps focus back to the item name field; tapping price again and typing 0 jumps back again. So entering “40” becomes impossible/annoying.
+Expected: When the price field is focused, it should keep focus until the user changes it. Typing multiple digits should be smooth.
+
+Likely cause / direction:
+
+A re-render is forcing focus back to the first input (or the inputs are controlled in a way that resets focus).
+
+Possibly autoFocus is being triggered repeatedly, or an effect runs on state change and focuses the name input.
+
+Could also be caused by the component remounting (key changes) on each keystroke.
+
+Fix goals:
+
+Ensure price input component does not remount on each keystroke.
+
+Remove any repeated autoFocus on name input after initial open.
+
+Avoid changing key props tied to input value/state.
+
+Preserve focus and caret position in the price input.
+
+Deliverable
+
+Fix all three issues.
+
+Test the full flow on mobile:
+
+Open app → tap “Create Live Session” → link appears immediately.
+
+Open “Add Item” → bottom sheet stays open and stable.
+
+Type item name + price 40 smoothly without focus jumping.
+
+Keep styling consistent with current UI.

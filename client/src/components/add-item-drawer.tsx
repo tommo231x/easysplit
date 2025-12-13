@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,10 +26,27 @@ export function AddItemDrawer({ onAddItem, currency, open, onOpenChange }: AddIt
     const [internalOpen, setInternalOpen] = useState(false);
     const [name, setName] = useState("");
     const [price, setPrice] = useState("");
+    const nameInputRef = useRef<HTMLInputElement>(null);
+    const hasAutoFocused = useRef(false);
 
     const isControlled = open !== undefined;
     const finalOpen = isControlled ? open : internalOpen;
     const finalSetOpen = isControlled ? onOpenChange! : setInternalOpen;
+
+    // Reset auto-focus tracking when drawer closes
+    useEffect(() => {
+        if (!finalOpen) {
+            hasAutoFocused.current = false;
+        }
+    }, [finalOpen]);
+
+    // Auto-focus name input only once when drawer opens
+    useEffect(() => {
+        if (finalOpen && !hasAutoFocused.current && nameInputRef.current) {
+            hasAutoFocused.current = true;
+            setTimeout(() => nameInputRef.current?.focus(), 150);
+        }
+    }, [finalOpen]);
 
     const handleSubmit = () => {
         if (!name || !price) return;
@@ -42,8 +59,17 @@ export function AddItemDrawer({ onAddItem, currency, open, onOpenChange }: AddIt
         finalSetOpen(false);
     };
 
+    const handleOpenChange = (newOpen: boolean) => {
+        finalSetOpen(newOpen);
+        if (!newOpen) {
+            // Reset state when closing
+            setName("");
+            setPrice("");
+        }
+    };
+
     return (
-        <Drawer open={finalOpen} onOpenChange={finalSetOpen}>
+        <Drawer open={finalOpen} onOpenChange={handleOpenChange}>
             {!isControlled && (
                 <DrawerTrigger asChild>
                     <Button className="w-full h-12 text-lg font-medium shadow-sm hover:translate-y-[-1px] transition-transform">
@@ -51,8 +77,8 @@ export function AddItemDrawer({ onAddItem, currency, open, onOpenChange }: AddIt
                     </Button>
                 </DrawerTrigger>
             )}
-            <DrawerContent>
-                <div className="mx-auto w-full max-w-sm">
+            <DrawerContent className="max-h-[85vh]" onPointerDownOutside={(e) => e.preventDefault()}>
+                <div className="mx-auto w-full max-w-sm overflow-y-auto">
                     <DrawerHeader>
                         <DrawerTitle>Add Manual Item</DrawerTitle>
                         <DrawerDescription>Enter item details below.</DrawerDescription>
@@ -62,15 +88,11 @@ export function AddItemDrawer({ onAddItem, currency, open, onOpenChange }: AddIt
                             <Label htmlFor="item-name">Item Name</Label>
                             <Input
                                 id="item-name"
+                                ref={nameInputRef}
                                 placeholder="e.g. Burger"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 className="h-12 text-lg"
-                                ref={(input) => {
-                                    if (input && finalOpen) {
-                                        setTimeout(() => input.focus(), 150);
-                                    }
-                                }}
                             />
                         </div>
                         <div className="space-y-2">
@@ -82,6 +104,7 @@ export function AddItemDrawer({ onAddItem, currency, open, onOpenChange }: AddIt
                                 <Input
                                     id="item-price"
                                     type="number"
+                                    inputMode="decimal"
                                     placeholder="0.00"
                                     value={price}
                                     onChange={(e) => setPrice(e.target.value)}
@@ -90,11 +113,11 @@ export function AddItemDrawer({ onAddItem, currency, open, onOpenChange }: AddIt
                                 />
                             </div>
                         </div>
-                        <Button onClick={handleSubmit} className="w-full h-12 text-lg">
+                        <Button onClick={handleSubmit} className="w-full h-12 text-lg" data-testid="button-add-item-submit">
                             Add Item
                         </Button>
                     </div>
-                    <DrawerFooter>
+                    <DrawerFooter className="pb-8">
                         <DrawerClose asChild>
                             <Button variant="outline">Cancel</Button>
                         </DrawerClose>

@@ -353,7 +353,38 @@ export default function SplitBill() {
 
   const handleShare = () => {
     setIsShared(true);
-    triggerSave(); // Forces a save to generate code
+    
+    // Immediately create session (don't wait for debounced save)
+    // Build proper quantities from orderItems
+    const billItems = orderItems.length > 0
+      ? orderItems.map((i, idx) => ({ id: idx + 1, name: i.name, price: i.price }))
+      : [{ id: 0, name: "_draft", price: 0 }];
+    
+    const billQuantities = orderItems.length > 0
+      ? orderItems.flatMap((item, idx) => {
+          const itemId = idx + 1;
+          const count = item.assignedTo.length || 1;
+          return item.assignedTo.map(personId => ({
+            itemId,
+            personId,
+            quantity: Number((1 / count).toFixed(4))
+          }));
+        })
+      : [{ itemId: 0, personId: "0", quantity: 1 }];
+    
+    const payload = {
+      name: splitName,
+      people,
+      items: billItems,
+      quantities: billQuantities,
+      totals: [{ person: { id: "0", name: "Draft" }, subtotal: 0, service: 0, tip: 0, total: 0 }],
+      draftData: JSON.stringify({ orderItems }),
+      currency,
+      serviceCharge,
+      tipPercent
+    };
+    
+    saveMutation.mutate(payload);
   };
 
   const copyLink = () => {
@@ -405,7 +436,9 @@ export default function SplitBill() {
                 <h3 className="font-medium text-sm">Dining with friends?</h3>
                 <p className="text-xs text-muted-foreground mt-1">Share a live link so everyone can add their own items.</p>
               </div>
-              <Button size="sm" onClick={handleShare} className="w-full">Create Live Session</Button>
+              <Button size="sm" onClick={handleShare} className="w-full" disabled={saveMutation.isPending}>
+                {saveMutation.isPending ? "Creating..." : "Create Live Session"}
+              </Button>
             </>
           ) : (
             <>
