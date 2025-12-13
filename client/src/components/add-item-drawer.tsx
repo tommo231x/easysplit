@@ -66,7 +66,11 @@ export function AddItemDrawer({ onAddItem, currency, open, onOpenChange }: AddIt
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 className="h-12 text-lg"
-                                autoFocus
+                                ref={(input) => {
+                                    if (input && finalOpen) {
+                                        setTimeout(() => input.focus(), 150);
+                                    }
+                                }}
                             />
                         </div>
                         <div className="space-y-2">

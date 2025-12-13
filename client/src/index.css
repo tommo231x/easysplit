@@ -92,5 +92,6 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    overscroll-behavior: none;
   }
 }

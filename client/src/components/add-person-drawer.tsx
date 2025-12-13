@@ -56,7 +56,11 @@ export function AddPersonDrawer({ onAddPerson, trigger }: AddPersonDrawerProps) 
                                 onChange={(e) => setName(e.target.value)}
                                 className="h-12 text-lg"
                                 onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                                autoFocus
+                                ref={(input) => {
+                                    if (input && open) {
+                                        setTimeout(() => input.focus(), 150);
+                                    }
+                                }}
                             />
                         </div>
                         <Button onClick={handleSubmit} className="w-full h-12 text-lg">
