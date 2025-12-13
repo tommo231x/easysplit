@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { ArrowLeft, Copy, Check, Share2, Edit, UserPlus, Link as LinkIcon, CheckCircle2, XCircle, MoreVertical, FileText } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -46,11 +46,21 @@ export default function Results() {
   const [splitName, setSplitName] = useState<string>("");
   const [splitStatus, setSplitStatusState] = useState<"open" | "closed">("open");
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
-  const savedSplitCode = sessionStorage.getItem("easysplit-split-code");
+  // Derive activeSplitCode: URL params first, then sessionStorage
+  const activeSplitCode = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlCode = params.get("splitCode");
+    if (urlCode && urlCode !== 'null') return urlCode;
+    const storedCode = sessionStorage.getItem("easysplit-split-code");
+    if (storedCode && storedCode !== 'null') return storedCode;
+    return null;
+  }, []);
 
-  // If there's a saved split code but no state, fetch the split from API
-  const { data: savedSplit } = useQuery<{
+  // If there's an active split code but no state, fetch the split from API
+  const shouldFetch = !!activeSplitCode && !state && !fetchError;
+  const { data: savedSplit, isLoading: isLoadingSplit, isError: isSplitError } = useQuery<{
     code: string;
     name?: string | null;
     menuCode: string | null;
@@ -63,29 +73,42 @@ export default function Results() {
     totals: PersonTotal[];
     createdAt: string;
   }>({
-    queryKey: [`/api/splits/${savedSplitCode}`],
-    enabled: !!savedSplitCode && !state,
+    queryKey: [`/api/splits/${activeSplitCode}`],
+    enabled: shouldFetch,
     retry: false,
   });
 
+  // Handle fetch error - clear stale code from storage
   useEffect(() => {
-    const sessionData = sessionStorage.getItem("easysplit-results");
-    if (sessionData) {
-      const data = JSON.parse(sessionData);
-      setState(data);
-      // Set split name from session data
-      if (data.splitName) {
-        setSplitName(data.splitName);
-      }
-      sessionStorage.removeItem("easysplit-results");
+    if (isSplitError && activeSplitCode) {
+      setFetchError(true);
+      sessionStorage.removeItem("easysplit-split-code");
+    }
+  }, [isSplitError, activeSplitCode]);
+
+  // Handle initial setup
+  useEffect(() => {
+    // Sync splitCode state with activeSplitCode
+    if (activeSplitCode) {
+      setSplitCode(activeSplitCode);
+      sessionStorage.setItem("easysplit-split-code", activeSplitCode);
     }
 
-    // Restore saved split code if it exists
-    const savedCode = sessionStorage.getItem("easysplit-split-code");
-    if (savedCode) {
-      setSplitCode(savedCode);
+    // Load from session results if available
+    const sessionData = sessionStorage.getItem("easysplit-results");
+    if (sessionData) {
+      try {
+        const data = JSON.parse(sessionData);
+        setState(data);
+        if (data.splitName) {
+          setSplitName(data.splitName);
+        }
+        sessionStorage.removeItem("easysplit-results");
+      } catch (e) {
+        console.error("Failed to parse session results", e);
+      }
     }
-  }, []);
+  }, [activeSplitCode]);
 
   // If we loaded a saved split, populate state from it
   useEffect(() => {
@@ -168,6 +191,36 @@ export default function Results() {
       });
     },
   });
+
+  // Show loading state while fetching from API
+  if (!state && isLoadingSplit && activeSplitCode) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">Loading split...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if fetch failed
+  if (!state && fetchError && activeSplitCode) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">Split not found or has expired</p>
+          <div className="flex gap-2 justify-center">
+            <Link href="/my-splits">
+              <Button variant="outline">View History</Button>
+            </Link>
+            <Link href="/split-bill">
+              <Button>Start New Split</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!state) {
     return (
