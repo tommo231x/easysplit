@@ -94,18 +94,18 @@ export const billSplitItemSchema = z.object({
   price: z.number(),
 });
 
-// Insert schema for bill splits
+// Insert schema for bill splits (allows empty people/items for draft sessions)
 export const insertBillSplitSchema = z.object({
   name: z.string().optional(),
   menuCode: z.string().nullable().optional(),
-  people: z.array(personSchema).min(1),
+  people: z.array(personSchema), // Allow empty for draft sessions
   items: z.array(billSplitItemSchema).min(1),
-  quantities: z.array(itemQuantitySchema).min(1),
+  quantities: z.array(itemQuantitySchema), // Allow empty for draft sessions
   draftData: z.string().optional(), // JSON string, easier to pass through
   currency: z.string().min(1),
   serviceCharge: z.number().min(0).max(100).finite(),
   tipPercent: z.number().min(0).max(100).finite(),
-  totals: z.array(personTotalSchema).min(1),
+  totals: z.array(personTotalSchema), // Allow empty for draft sessions
 });
 
 // Types
