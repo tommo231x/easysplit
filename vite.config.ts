@@ -7,17 +7,6 @@ export default defineConfig({
   plugins: [
     react(),
     runtimeErrorOverlay(),
-    ...(process.env.NODE_ENV !== "production" &&
-      process.env.REPL_ID !== undefined
-      ? [
-        await import("@replit/vite-plugin-cartographer").then((m) =>
-          m.cartographer(),
-        ),
-        await import("@replit/vite-plugin-dev-banner").then((m) =>
-          m.devBanner(),
-        ),
-      ]
-      : []),
   ],
   resolve: {
     alias: {
@@ -32,19 +21,21 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    port: 3000,
+    port: 5000,
     strictPort: true,
+    host: "0.0.0.0",
+    allowedHosts: true,
     fs: {
       strict: true,
       deny: ["**/.*"],
     },
     proxy: {
       "/api": {
-        target: "http://localhost:5000",
+        target: "http://localhost:3001",
         changeOrigin: true,
       },
       "/healthz": {
-        target: "http://localhost:5000",
+        target: "http://localhost:3001",
         changeOrigin: true,
       },
     },

@@ -30,27 +30,31 @@ function Router() {
   );
 }
 
-function App() {
+function AppContent() {
   const { isLoading } = useQuery({
     queryKey: ['health'],
-    queryFn: () => new Promise(resolve => setTimeout(resolve, 500)), // Artificial min-load time
+    queryFn: () => new Promise(resolve => setTimeout(() => resolve(true), 500)),
     retry: false
   });
 
   if (isLoading) return <AppLoader />;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <div className="min-h-screen bg-background font-sans antialiased relative overflow-hidden">
-          {/* Ambient Background Glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/20 blur-[120px] rounded-full pointer-events-none -z-10 mix-blend-screen" />
-          <div className="absolute bottom-0 right-0 w-[600px] h-[500px] bg-secondary/10 blur-[100px] rounded-full pointer-events-none -z-10" />
+    <TooltipProvider>
+      <Toaster />
+      <div className="min-h-screen bg-background font-sans antialiased relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/20 blur-[120px] rounded-full pointer-events-none -z-10 mix-blend-screen" />
+        <div className="absolute bottom-0 right-0 w-[600px] h-[500px] bg-secondary/10 blur-[100px] rounded-full pointer-events-none -z-10" />
+        <Router />
+      </div>
+    </TooltipProvider>
+  );
+}
 
-          <Router />
-        </div>
-      </TooltipProvider>
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppContent />
     </QueryClientProvider>
   );
 }
