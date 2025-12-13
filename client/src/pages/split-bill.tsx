@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, Plus, Users, Calculator as CalculatorIcon, FilePlus, Copy, Share2 } from "lucide-react";
+import { ArrowLeft, Users, FilePlus, Copy, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -280,15 +280,11 @@ export default function SplitBill() {
 
   const handleCloseBill = async () => {
     if (people.length === 0 || orderItems.length === 0) {
-      toast({ title: "Nothing to split", variant: "destructive" });
+      toast({ title: "Nothing to save", variant: "destructive" });
       return;
     }
 
-    if (!confirm("Are you sure you want to close this bill? This will save it to history.")) {
-      return;
-    }
-
-    // 2. Prepare Payload (Map Instances -> Bill Items)
+    // Prepare Payload (Map Instances -> Bill Items)
     const billItems = orderItems.map((item, idx) => ({
       id: idx + 1,
       name: item.name,
@@ -332,22 +328,25 @@ export default function SplitBill() {
     try {
       const result = await saveSplit(payload, splitCode || undefined);
 
-      // Save to local history immediately (Strings only, matching my-splits.tsx expectation)
+      // Save to local history
       try {
         const history: string[] = JSON.parse(localStorage.getItem("easysplit-my-splits") || "[]");
-        // Dedupe: remove if exists
         const filtered = history.filter((c: string) => c !== result.code);
-        // Prepend and cap at 50
         const newHistory = [result.code, ...filtered].slice(0, 50);
         localStorage.setItem("easysplit-my-splits", JSON.stringify(newHistory));
       } catch (e) {
         console.error("Failed to save to local history", e);
       }
 
-      setLocation(`/results?splitCode=${result.code}`);
+      // Clear session state
+      sessionStorage.removeItem("easysplit-form-state");
+
+      // Show success and go home
+      toast({ title: "Saved to history", description: "You can view it anytime from My Splits." });
+      setLocation("/");
     } catch (e) {
       console.error(e);
-      toast({ title: "Failed to save split", variant: "destructive" });
+      toast({ title: "Failed to save", variant: "destructive" });
     }
   };
 
@@ -418,10 +417,10 @@ export default function SplitBill() {
         </div>
         <div className="flex gap-2">
           {/* Clean Header Actions */}
-          <Button variant="ghost" size="icon" onClick={() => setIsShared(true)} className={isShared ? "text-green-600 bg-green-50" : "text-muted-foreground"}>
-            <Share2 className="h-5 w-5" />
+          <Button variant="ghost" size="sm" onClick={handleStartOver} className="gap-1.5" data-testid="button-new-order">
+            <FilePlus className="h-4 w-4" />
+            <span className="text-xs font-medium">New</span>
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleStartOver} className="hover:text-destructive"><FilePlus className="h-5 w-5" /></Button>
         </div>
       </header>
 
@@ -593,8 +592,8 @@ export default function SplitBill() {
                 {(calculatedTotals.reduce((sum, t) => sum + t.total, 0)).toFixed(2)}
               </div>
             </div>
-            <Button size="lg" className="flex-1 h-12 text-lg font-bold bg-black text-white hover:bg-primary hover:scale-[1.02] transition-transform brutal-shadow-sm" onClick={handleCloseBill}>
-              Close Bill <CalculatorIcon className="ml-2 h-5 w-5" />
+            <Button size="lg" className="flex-1 h-12 text-lg font-bold bg-black text-white hover:bg-primary hover:scale-[1.02] transition-transform brutal-shadow-sm" onClick={handleCloseBill} data-testid="button-save-close">
+              Save & Close
             </Button>
           </div>
         </div>
