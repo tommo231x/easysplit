@@ -1,0 +1,81 @@
+Light SEO Improvements (No Refactor)
+
+Goal: Apply light, safe SEO improvements to EasySplit without changing app logic, layout, or behaviour.
+
+Scope (IMPORTANT)
+
+Only modify SEO-related tags in the HTML <head>
+
+Do not change React components, routing, state, or UI
+
+Do not add new pages or restructure files
+
+Keep all existing meta tags unless explicitly instructed
+
+Tasks
+1. Add canonical URL
+
+Add the following inside <head> (if not already present):
+
+<link rel="canonical" href="https://easysplit.link/" />
+
+
+This is to avoid duplicate content across preview domains and web.app.
+
+2. Improve Open Graph & Twitter previews
+
+Currently the social preview image is too small. Do the following:
+
+Create a new image at:
+client/public/images/og-easysplit.png
+
+Size: 1200 × 630
+
+Simple branding (EasySplit name + short tagline is enough)
+
+Update / add these meta tags using absolute URLs:
+
+<meta property="og:url" content="https://easysplit.link/" />
+<meta property="og:image" content="https://easysplit.link/images/og-easysplit.png" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://easysplit.link/images/og-easysplit.png" />
+
+
+Do not remove existing OG/Twitter tags unless they conflict.
+
+3. Add small mobile + app polish tags
+
+Add the following (if not present):
+
+<meta name="theme-color" content="#0B1220" />
+<meta name="application-name" content="EasySplit" />
+
+4. Add lightweight structured data (JSON-LD)
+
+Add this once inside <head>:
+
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"SoftwareApplication",
+  "name":"EasySplit",
+  "applicationCategory":"FinanceApplication",
+  "operatingSystem":"Web",
+  "url":"https://easysplit.link/",
+  "description":"Split restaurant bills with friends. Create a live session, add items, and see who owes what in real time.",
+  "offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"}
+}
+</script>
+
+Validation
+
+After changes:
+
+Confirm build succeeds (npm run build)
+
+Verify <head> contains only one canonical URL
+
+Ensure no duplicate og:image or twitter:image tags
+
+App behaviour must remain unchanged
