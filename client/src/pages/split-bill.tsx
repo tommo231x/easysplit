@@ -457,14 +457,46 @@ export default function SplitBill() {
           )}
         </div>
 
+        {/* Step-by-Step Guide */}
+        {people.length === 0 && (
+          <div className="bg-muted/30 border border-border rounded-lg p-4 space-y-3">
+            <h3 className="font-bold text-sm text-center mb-3">How it works</h3>
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+              <div>
+                <p className="text-sm font-medium">Name your session</p>
+                <p className="text-xs text-muted-foreground">What are you eating? Pizza night, Sushi dinner, etc.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+              <div>
+                <p className="text-sm font-medium">Add yourself</p>
+                <p className="text-xs text-muted-foreground">Put your first name and start adding what you ordered.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+              <div>
+                <p className="text-sm font-medium">Add items or share with friends</p>
+                <p className="text-xs text-muted-foreground">Add items manually, or create a live session so friends can add their own orders.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Split Name Input */}
         <div className="bg-white p-4 border-2 border-black brutal-shadow rounded-2xl transform -rotate-1 hover:rotate-0 transition-transform duration-200">
-          <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1 block">What are we eating?</Label>
+          <div className="flex items-center gap-2 mb-1">
+            {people.length === 0 && <span className="text-xs font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded">Step 1</span>}
+            <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">What are we eating?</Label>
+          </div>
           <Input
-            placeholder="e.g. Sushi Night 🍣"
+            placeholder="e.g. Sushi Night"
             className="text-2xl font-black border-none px-0 focus-visible:ring-0 placeholder:font-bold placeholder:text-muted-foreground/30 bg-transparent h-auto"
             value={splitName}
             onChange={e => setSplitName(e.target.value)}
+            data-testid="input-split-name"
           />
         </div>
 
@@ -489,6 +521,7 @@ export default function SplitBill() {
                 }
               }}
               className="h-8 border-black font-bold text-lg"
+              data-testid="input-service-charge"
             />
             <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
               Check if included by restaurant.
@@ -502,18 +535,20 @@ export default function SplitBill() {
 
         {/* People & Items List */}
         <div className="space-y-4">
-          <div className="flex justify-between items-end pb-2 border-b">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Orders</Label>
+          <div className="flex justify-between items-end pb-2 border-b gap-2">
+            <div className="flex items-center gap-2">
+              {people.length === 0 && <span className="text-xs font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded">Step 2</span>}
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider">Orders</Label>
+            </div>
             <span className="text-xs text-muted-foreground">{people.length} people</span>
           </div>
 
           {people.length === 0 ? (
-            <div className="text-center py-10 opacity-60">
+            <div className="text-center py-8">
               <Users className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm">Add the first person to start ordering.</p>
-              <div className="mt-4">
-                <AddPersonDrawer onAddPerson={handleAddPerson} trigger={<Button>Add Person</Button>} />
-              </div>
+              <p className="text-sm font-medium">Add yourself first</p>
+              <p className="text-xs text-muted-foreground mb-4">Enter your name to start adding what you ordered.</p>
+              <AddPersonDrawer onAddPerson={handleAddPerson} trigger={<Button data-testid="button-add-first-person">Add Your Name</Button>} />
             </div>
           ) : (
             <>
