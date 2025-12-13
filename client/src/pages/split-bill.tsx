@@ -478,8 +478,8 @@ export default function SplitBill() {
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
               <div>
-                <p className="text-sm font-medium">Add items or share with friends</p>
-                <p className="text-xs text-muted-foreground">Add items manually, or create a live session so friends can add their own orders.</p>
+                <p className="text-sm font-medium">Share the link with your group</p>
+                <p className="text-xs text-muted-foreground">Tap "Create Live Session" to get a shareable link. Friends can join and add their own items in real-time.</p>
               </div>
             </div>
           </div>
