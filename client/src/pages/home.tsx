@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { FileText, Calculator, History, Circle, ChevronRight } from "lucide-react";
+import { FileText, Calculator, History, Circle, ChevronRight, Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect } from "react";
@@ -226,8 +226,9 @@ export default function Home() {
             href="https://www.instagram.com/finafeels/" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
           >
+            <Instagram className="h-3.5 w-3.5" />
             @finafeels
           </a>
         </footer>
