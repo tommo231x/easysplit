@@ -194,6 +194,43 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        {/* About EasySplit Section */}
+        <div className="mt-16 mb-12 border-t pt-8">
+          <div className="max-w-2xl">
+            <h3 className="text-lg font-semibold mb-4">About EasySplit</h3>
+            <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+              <p>
+                EasySplit makes it easier to split the bill when you go out to eat or drink.
+              </p>
+              <p>
+                It helps you keep track as you go, so there's no awkward maths or arguments at the end.
+              </p>
+              <p>
+                You can share a live link so others join in, or just use it yourself and add names manually — everyone doesn't have to be involved.
+              </p>
+              <p>
+                There's no app to download and no account to create, so it's quick to start and easy to use.
+              </p>
+              <p>
+                EasySplit runs entirely in the browser on any modern phone or computer.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className="border-t py-8 text-center text-xs text-muted-foreground">
+          <p className="mb-2">Built by FinaFeels &amp; Thomas O'Connor</p>
+          <a 
+            href="https://www.instagram.com/finafeels/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hover:text-foreground transition-colors"
+          >
+            @finafeels
+          </a>
+        </footer>
       </main>
     </div>
   );

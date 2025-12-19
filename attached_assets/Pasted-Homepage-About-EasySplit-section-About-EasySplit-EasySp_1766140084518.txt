@@ -1,0 +1,72 @@
+Homepage – About EasySplit section
+
+About EasySplit
+EasySplit makes it easier to split the bill when you go out to eat or drink.
+It helps you keep track as you go, so there’s no awkward maths or arguments at the end.
+You can share a live link so others join in, or just use it yourself and add names manually — everyone doesn’t have to be involved.
+There’s no app to download and no account to create, so it’s quick to start and easy to use.
+EasySplit runs entirely in the browser on any modern phone or computer.
+
+That is the final agreed description.
+No changes. No additions.
+
+Footer – Creator credit + social link
+
+Displayed at the very bottom of the page:
+
+Built by FinaFeels & Thomas O’Connor
+
+Directly underneath that line, add one subtle social link only:
+
+@finafeels
+
+Behaviour:
+
+@finafeels hyperlinks to:
+https://www.instagram.com/finafeels/
+
+No TikTok
+
+No extra text
+
+No explanations
+
+No bios
+
+✅ FINAL REPLIT PROMPT (PASTE THIS)
+
+Add a small “About EasySplit” section to the homepage below the main app UI and above the footer, using the following copy exactly as written:
+
+About EasySplit
+EasySplit makes it easier to split the bill when you go out to eat or drink.
+It helps you keep track as you go, so there’s no awkward maths or arguments at the end.
+You can share a live link so others join in, or just use it yourself and add names manually — everyone doesn’t have to be involved.
+There’s no app to download and no account to create, so it’s quick to start and easy to use.
+EasySplit runs entirely in the browser on any modern phone or computer.
+
+The section must visually match the existing design:
+
+subtle and unobtrusive
+
+smaller font than the main app UI
+
+muted / secondary text colour
+
+constrained max width
+
+responsive (mobile-first)
+
+Do not add cards, borders, backgrounds, buttons, or calls to action.
+
+At the very bottom of the page, add a subtle footer credit that reads exactly:
+
+Built by FinaFeels & Thomas O’Connor
+
+Directly beneath this line, add a single subtle social link:
+
+@finafeels
+
+The @finafeels text should hyperlink to:
+https://www.instagram.com/finafeels/
+
+Do not add any other social links, bios, or explanations.
