@@ -8,6 +8,32 @@
     ],
     "headers": [
       {
+        "source": "/sitemap.xml",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/xml"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, max-age=0"
+          }
+        ]
+      },
+      {
+        "source": "/robots.txt",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "text/plain"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, max-age=0"
+          }
+        ]
+      },
+      {
         "source": "/favicon.ico",
         "headers": [
           {
@@ -28,7 +54,39 @@
     ],
     "rewrites": [
       {
-        "source": "**",
+        "source": "/create-menu",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/split-bill",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/results",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/edit-menu/**",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/split/**",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/adjust-split/**",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/my-splits",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/privacy",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/view-split/**",
         "destination": "/index.html"
       }
     ]

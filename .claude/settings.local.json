@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:easysplit.link)",
+      "Bash(npm run build:*)",
+      "Bash(npx firebase deploy:*)",
+      "Bash(git commit:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
