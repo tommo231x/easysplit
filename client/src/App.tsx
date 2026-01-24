@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { CookieConsent } from "@/components/cookie-consent";
 import Home from "@/pages/home";
 import CreateMenu from "@/pages/create-menu";
 import SplitBill from "@/pages/split-bill";
@@ -11,6 +12,7 @@ import EditMenu from "@/pages/edit-menu";
 import ViewSplit from "@/pages/view-split";
 import AdjustSplit from "@/pages/adjust-split";
 import MySplits from "@/pages/my-splits";
+import Privacy from "@/pages/privacy";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -24,6 +26,7 @@ function Router() {
       <Route path="/split/:code" component={ViewSplit} />
       <Route path="/adjust-split/:code" component={AdjustSplit} />
       <Route path="/my-splits" component={MySplits} />
+      <Route path="/privacy" component={Privacy} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -38,6 +41,7 @@ function App() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/20 blur-[120px] rounded-full pointer-events-none -z-10 mix-blend-screen" />
           <div className="absolute bottom-0 right-0 w-[600px] h-[500px] bg-secondary/10 blur-[100px] rounded-full pointer-events-none -z-10" />
           <Router />
+          <CookieConsent />
         </div>
       </TooltipProvider>
     </QueryClientProvider>
